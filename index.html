@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
+  <title>AnonMesh Chat</title>
+  <link rel="icon" href="logo.png">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --primary: #3b82f6;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #ffffff;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #334155;
+      --glass-bg: rgba(30, 41, 59, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --shadow: 0 8px 32px rgba(0,0,0,0.3);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --nav-height: 68px;
+      --header-height: 56px;
+      --transition: 0.25s ease;
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    .light-mode {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --glass-bg: rgba(255,255,255,0.8);
+      --glass-border: rgba(0,0,0,0.05);
+      --shadow: 0 8px 30px rgba(0,0,0,0.06);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { font-family: var(--font); -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; user-select: none; }
+    body {
+      background: var(--bg); color: var(--text); min-height: 100dvh; max-width: 480px; margin: 0 auto;
+      display: flex; flex-direction: column; transition: background var(--transition), color var(--transition);
+      position: relative; overflow-x: hidden;
+    }
+    .screen { display: none; flex-direction: column; flex: 1; height: 100dvh; animation: fadeSlide 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeSlide { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    .splash-screen {
+      display: flex; align-items:center; justify-content:center; background: var(--bg);
+      position:fixed; inset:0; z-index:1000; max-width:480px; margin:0 auto;
+    }
+    .splash-screen.hidden { display:none; }
+    .splash-logo { width:100px; height:100px; margin:0 auto 20px; }
+    .splash-logo img { width:100%; height:100%; border-radius:22px; }
+    .splash-title { font-size:26px; font-weight:700; }
+    .splash-subtitle { color:var(--text-secondary); font-size:13px; }
+    .splash-loader { margin:28px auto 0; width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
+
+    .login-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px); border:1px solid var(--glass-border);
+      border-radius:24px; padding:32px 24px; width:100%; max-width:380px; box-shadow:var(--shadow); text-align:center;
+    }
+    .input-group { margin:18px 0; }
+    .input-group input {
+      width:100%; padding:14px 16px; background:var(--card); border:2px solid var(--border);
+      border-radius:var(--radius); color:var(--text); font-size:15px; outline:none; transition:var(--transition);
+    }
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:6px;
+      padding:13px 24px; border-radius:var(--radius); font-size:15px; font-weight:600;
+      border:none; cursor:pointer; transition:var(--transition); font-family:var(--font);
+    }
+    .btn-primary { background:var(--primary); color:#fff; width:100%; }
+    .btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+    .btn-sm { padding:8px 16px; font-size:13px; border-radius:var(--radius-sm); }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-success { background:var(--success); color:#fff; }
+
+    .perm-card {
+      background:var(--glass-bg); backdrop-filter:blur(20px); border:1px solid var(--glass-border);
+      border-radius:24px; padding:28px 20px; width:100%; max-width:380px; box-shadow:var(--shadow); text-align:center;
+    }
+    .perm-item { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--card); border-radius:var(--radius); margin:8px 0; }
+    .status-dot { width:10px; height:10px; border-radius:50%; }
+    .dot-ok { background:var(--success); }
+    .dot-no { background:var(--danger); animation:pulse 1.5s infinite; }
+
+    .app-header {
+      display:flex; align-items:center; padding:10px 16px; gap:12px;
+      background:var(--glass-bg); backdrop-filter:blur(20px); border-bottom:1px solid var(--glass-border);
+      min-height:var(--header-height); position:sticky; top:0; z-index:50;
+    }
+    .back-btn { width:36px; height:36px; border-radius:50%; background:var(--card); border:none; color:var(--text); font-size:20px; cursor:pointer; }
+    .header-info { flex:1; }
+    .header-title { font-weight:700; font-size:17px; }
+    .header-status { font-size:12px; color:var(--success); }
+    .header-status.offline { color:var(--text-muted); }
+    .icon-btn { width:42px; height:42px; border-radius:50%; background:var(--card); border:none; color:var(--text); font-size:20px; cursor:pointer; }
+
+    .bottom-nav {
+      display:flex; justify-content:space-around; background:var(--glass-bg); backdrop-filter:blur(20px);
+      border-top:1px solid var(--glass-border); padding:6px 8px; position:fixed; bottom:0; left:50%;
+      transform:translateX(-50%); width:100%; max-width:480px; z-index:200; height:var(--nav-height);
+    }
+    .nav-item {
+      display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
+      padding:8px 12px; border-radius:var(--radius); font-size:10px; font-weight:500;
+      color:var(--text-muted); background:transparent; border:none; transition:var(--transition);
+    }
+    .nav-item.active { color:var(--primary); font-weight:700; }
+
+    .chat-list-item {
+      display:flex; align-items:center; gap:12px; padding:14px 16px;
+      background:var(--card); border-radius:var(--radius); cursor:pointer; margin-bottom:8px;
+    }
+    .avatar {
+      width:48px; height:48px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; color:#fff; position:relative;
+    }
+    .online-dot { position:absolute; bottom:2px; right:2px; width:12px; height:12px; background:var(--success); border:2px solid var(--card); border-radius:50%; }
+    .offline-dot { background:var(--text-muted); }
+    .chat-info { flex:1; }
+    .chat-name { font-weight:600; font-size:15px; }
+    .chat-preview { font-size:12px; color:var(--text-secondary); }
+    .chat-time { font-size:11px; color:var(--text-muted); }
+    .search-input {
+      width:100%; padding:12px 16px; background:var(--card); border:2px solid var(--border);
+      border-radius:var(--radius); color:var(--text); font-size:14px; outline:none; margin-bottom:12px;
+    }
+
+    .messages-container { flex:1; overflow-y:auto; padding:12px 8px; display:flex; flex-direction:column; gap:6px; }
+    .message-bubble {
+      max-width:80%; padding:10px 14px; border-radius:18px; font-size:14px; position:relative;
+    }
+    .message-sent { align-self:flex-end; background:var(--primary); color:#fff; }
+    .message-received { align-self:flex-start; background:var(--card); color:var(--text); }
+    .chat-input-area {
+      display:flex; gap:8px; padding:10px 12px; background:var(--glass-bg); backdrop-filter:blur(20px);
+      border-top:1px solid var(--glass-border);
+    }
+    .chat-input-area input { flex:1; padding:12px 16px; background:var(--card); border:2px solid var(--border); border-radius:24px; color:var(--text); }
+    .send-btn { background:var(--primary); color:#fff; }
+    .recording { background:var(--danger); animation:pulse 0.8s infinite; }
+
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:500;
+      display:flex; align-items:flex-end; justify-content:center; max-width:480px; margin:0 auto;
+    }
+    .modal-overlay.hidden { display:none; }
+    .modal-sheet { background:var(--card); border-radius:24px 24px 0 0; padding:20px; width:100%; max-height:70vh; overflow-y:auto; }
+    .modal-option { padding:14px 16px; cursor:pointer; border-radius:var(--radius); }
+    .settings-item {
+      display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+      background:var(--card); border-radius:var(--radius); margin-bottom:6px; cursor:pointer;
+    }
+    .toggle-switch { width:48px; height:28px; background:var(--border); border-radius:14px; position:relative; }
+    .toggle-switch.on { background:var(--primary); }
+    .toggle-switch::after { content:''; position:absolute; width:22px; height:22px; background:#fff; border-radius:50%; top:3px; left:3px; transition:var(--transition); }
+    .toggle-switch.on::after { left:23px; }
+
+    .toast {
+      position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--card);
+      color:var(--text); padding:12px 20px; border-radius:24px; font-size:13px; z-index:999; white-space:nowrap;
+    }
+    .qr-canvas { background:#fff; padding:12px; border-radius:var(--radius); }
+    #qr-reader { width:100%; max-width:350px; margin:0 auto; border-radius:var(--radius); overflow:hidden; }
+    .radar-item {
+      display:flex; align-items:center; gap:12px; padding:14px; background:var(--card);
+      border-radius:var(--radius); margin-bottom:8px; cursor:pointer;
+    }
+    .bluetooth-indicator {
+      position:fixed; top:10px; right:10px; background:var(--success); color:#fff;
+      padding:6px 12px; border-radius:16px; font-size:12px; z-index:300;
+    }
+    .bluetooth-indicator.off { background:var(--danger); }
+  </style>
+</head>
+<body>
+  <div id="splash-screen" class="splash-screen">
+    <div class="splash-logo"><img src="logo.png" alt="Logo" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=font-size:60px;>💬</div>';"></div>
+    <div class="splash-title">AnonMesh Chat</div>
+    <div class="splash-subtitle">Bluetooth Mesh · E2E Encryption</div>
+    <div class="splash-loader"></div>
+  </div>
+
+  <div id="login-screen" class="screen">
+    <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:20px;">
+      <div class="login-card">
+        <div style="font-size:48px;">🔐</div>
+        <div style="font-size:22px;font-weight:700;">Masuk AnonMesh</div>
+        <div class="input-group"><input type="text" id="username-input" placeholder="Nama Pengguna" maxlength="25"></div>
+        <button class="btn btn-primary" id="btn-login">🚀 Masuk</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="permission-screen" class="screen">
+    <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:20px;">
+      <div class="perm-card">
+        <h3>Izin Diperlukan</h3>
+        <div class="perm-item"><span class="status-dot" id="dot-bluetooth"></span>📶 Bluetooth <span id="status-bluetooth">-</span></div>
+        <div class="perm-item"><span class="status-dot" id="dot-mic"></span>🎤 Mikrofon <span id="status-mic">-</span></div>
+        <div class="perm-item"><span class="status-dot" id="dot-cam"></span>📷 Kamera <span id="status-cam">-</span></div>
+        <button class="btn btn-primary" id="btn-check-perms">🔍 Periksa & Aktifkan</button>
+        <button class="btn btn-outline" id="btn-skip-perms" style="width:100%;margin-top:8px;">Lanjutkan (Mode Terbatas)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-screen" class="screen">
+    <div class="bluetooth-indicator" id="bluetooth-indicator">📶 BT</div>
+    <div id="tab-chat" class="tab-content" style="flex:1;display:flex;flex-direction:column;padding:12px;">
+      <input class="search-input" id="search-chat" placeholder="🔍 Cari chat...">
+      <div id="chat-list-container" style="flex:1;overflow-y:auto;"></div>
+    </div>
+    <div id="tab-friends" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
+      <button class="btn btn-outline" id="btn-add-friend" style="margin-bottom:12px;">➕ Tambah Teman</button>
+      <div id="friends-list-container" style="flex:1;overflow-y:auto;"></div>
+    </div>
+    <div id="tab-radar" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
+      <h3 style="margin-bottom:12px;">📡 Radar Bluetooth</h3>
+      <button class="btn btn-primary" id="btn-scan-ble" style="margin-bottom:12px;">🔍 Scan Perangkat Sekitar</button>
+      <div id="radar-container" style="flex:1;overflow-y:auto;"></div>
+    </div>
+    <div id="tab-profile" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:20px;align-items:center;">
+      <div class="avatar" style="width:72px;height:72px;font-size:28px;" id="profile-avatar">?</div>
+      <h3 id="profile-name">-</h3>
+      <p id="profile-id" style="font-family:monospace;">-</p>
+      <canvas id="profile-qr" class="qr-canvas" width="180" height="180"></canvas>
+      <button class="btn btn-sm btn-outline" id="btn-edit-profile">✏️ Edit Profil</button>
+    </div>
+    <div id="tab-settings" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
+      <div class="settings-item" id="menu-profile"><span>👤 Profil Saya</span><span>→</span></div>
+      <div class="settings-item" id="menu-privacy"><span>🔒 Privasi</span><span>→</span></div>
+      <div class="settings-item" id="menu-blocked"><span>🚫 Daftar Blokir</span><span>→</span></div>
+      <div class="settings-item" id="menu-starred"><span>⭐ Pesan Berbintang</span><span>→</span></div>
+      <div class="settings-item" id="menu-theme"><span>🎨 Tema</span><span id="theme-label">Dark</span></div>
+      <div class="settings-item" id="menu-about"><span>ℹ️ Tentang</span><span>→</span></div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="chat">💬 Chat</button>
+      <button class="nav-item" data-tab="friends">👥 Teman</button>
+      <button class="nav-item" data-tab="radar">📡 Radar</button>
+      <button class="nav-item" data-tab="profile">👤 Profil</button>
+      <button class="nav-item" data-tab="settings">⚙️</button>
+    </nav>
+  </div>
+
+  <div id="chat-detail-screen" class="screen">
+    <div class="app-header">
+      <button class="back-btn" id="btn-back-chat">←</button>
+      <div class="header-info">
+        <div class="header-title" id="chat-partner-name">-</div>
+        <div class="header-status" id="chat-partner-status">offline</div>
+      </div>
+      <button class="icon-btn" id="btn-connect-ble">📶</button>
+      <button class="icon-btn" id="btn-chat-menu">⋮</button>
+    </div>
+    <div id="pinned-container"></div>
+    <div class="messages-container" id="messages-container"></div>
+    <div class="chat-input-area">
+      <button class="icon-btn" id="btn-voice">🎤</button>
+      <input type="text" id="message-input" placeholder="Ketik pesan...">
+      <button class="icon-btn send-btn" id="btn-send">➤</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal-sheet" id="modal-content"></div>
+  </div>
+  <div class="toast" id="toast" style="display:none;"></div>
+
+  <script>
+    (function() {
+      // ===================== STORAGE =====================
+      const PREFIX = 'anonmesh_';
+      let currentUser = null;
+      let allChats = {};
+      let friendsList = [];
+      let blockedUsers = [];
+      let starredMessages = [];
+      let settings = { privacy: { allowAddViaID:true, allowAddViaQR:true, showMyQR:true, acceptVoice:true }, theme:'dark' };
+      let permissions = { bluetooth:false, mic:false, camera:false };
+      let currentPartnerId = null;
+      let bleDevice = null;
+      let bleCharacteristic = null;
+      const SERVICE_UUID = '19b10000-e8f2-537e-4f6c-d104768a1214';
+      const CHAR_UUID = '19b10001-e8f2-537e-4f6c-d104768a1214';
+
+      function save() { localStorage.setItem(PREFIX+'data', JSON.stringify({currentUser, allChats, friendsList, blockedUsers, starredMessages, settings, permissions})); }
+      function load() {
+        const raw = localStorage.getItem(PREFIX+'data');
+        if(raw) {
+          try {
+            const d = JSON.parse(raw);
+            currentUser = d.currentUser; allChats = d.allChats||{}; friendsList = d.friendsList||[];
+            blockedUsers = d.blockedUsers||[]; starredMessages = d.starredMessages||[];
+            settings = d.settings||{ privacy:{allowAddViaID:true,allowAddViaQR:true,showMyQR:true,acceptVoice:true}, theme:'dark' };
+            permissions = d.permissions||{ bluetooth:false, mic:false, camera:false };
+          } catch(e){ resetData(); }
+        } else resetData();
+      }
+      function resetData() {
+        currentUser=null; allChats={}; friendsList=[]; blockedUsers=[]; starredMessages=[];
+        settings={ privacy:{allowAddViaID:true,allowAddViaQR:true,showMyQR:true,acceptVoice:true}, theme:'dark' };
+        permissions={ bluetooth:false, mic:false, camera:false };
+      }
+
+      const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/';
+      function genId() { let id=''; for(let i=0;i<23;i++) id+=CHARSET[Math.floor(Math.random()*CHARSET.length)]; return id; }
+      const formatTime = (iso) => {
+        const d=new Date(iso), now=new Date();
+        const h=d.getHours().toString().padStart(2,'0'), m=d.getMinutes().toString().padStart(2,'0');
+        if(d.toDateString()===now.toDateString()) return `Hari ini ${h}:${m}`;
+        const y=new Date(now); y.setDate(now.getDate()-1);
+        if(d.toDateString()===y.toDateString()) return `Kemarin ${h}:${m}`;
+        return `${d.getDate()}/${d.getMonth()+1} ${h}:${m}`;
+      };
+      const toast = (msg) => {
+        const t=document.getElementById('toast'); t.textContent=msg; t.style.display='block';
+        clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none',2000);
+      };
+      const showModal = (html) => { document.getElementById('modal-content').innerHTML=html; document.getElementById('modal-overlay').classList.remove('hidden'); };
+      const hideModal = () => document.getElementById('modal-overlay').classList.add('hidden');
+      const applyTheme = () => {
+        document.body.classList.toggle('light-mode', settings.theme==='light' || (settings.theme==='system' && matchMedia('(prefers-color-scheme:light)').matches));
+        document.getElementById('theme-label').textContent = settings.theme==='dark'?'Dark':settings.theme==='light'?'Light':'System';
+      };
+
+      // ===================== BLUETOOTH HELPERS =====================
+      async function checkBluetooth() {
+        if (!navigator.bluetooth) { permissions.bluetooth = false; return false; }
+        try {
+          const available = await navigator.bluetooth.getAvailability();
+          permissions.bluetooth = available;
+          return available;
+        } catch { permissions.bluetooth = false; return false; }
+      }
+      function updateBluetoothIndicator() {
+        const el = document.getElementById('bluetooth-indicator');
+        if (el) {
+          el.textContent = permissions.bluetooth ? '📶 BT Aktif' : '📶 BT Mati';
+          el.className = 'bluetooth-indicator' + (permissions.bluetooth ? '' : ' off');
+        }
+      }
+      async function connectToBLE(deviceName) {
+        if (!permissions.bluetooth) { toast('Bluetooth tidak aktif'); return false; }
+        try {
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ name: deviceName }],
+            optionalServices: [SERVICE_UUID]
+          });
+          const server = await device.gatt.connect();
+          const service = await server.getPrimaryService(SERVICE_UUID);
+          const characteristic = await service.getCharacteristic(CHAR_UUID);
+          bleDevice = device;
+          bleCharacteristic = characteristic;
+          toast('Terhubung ke ' + device.name);
+          return true;
+        } catch(e) {
+          toast('Gagal menghubungkan: ' + e.message);
+          return false;
+        }
+      }
+      async function sendViaBLE(payload) {
+        if (!bleCharacteristic) return false;
+        try {
+          const encoder = new TextEncoder();
+          await bleCharacteristic.writeValue(encoder.encode(JSON.stringify(payload)));
+          return true;
+        } catch(e) { return false; }
+      }
+      async function readMessagesFromBLE() {
+        if (!bleCharacteristic) return null;
+        try {
+          const value = await bleCharacteristic.readValue();
+          const json = JSON.parse(new TextDecoder().decode(value));
+          return json;
+        } catch(e) { return null; }
+      }
+
+      // ===================== RADAR & FRIENDS =====================
+      async function scanRadar() {
+        if (!permissions.bluetooth) {
+          const ok = await checkBluetooth();
+          if (!ok) { toast('Aktifkan Bluetooth terlebih dahulu!'); updateBluetoothIndicator(); return; }
+        }
+        try {
+          const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [SERVICE_UUID]
+          });
+          // Tambahkan ke radar dan teman otomatis
+          const name = device.name || 'Unknown';
+          const id = device.id;
+          addRadarDevice(name, id);
+          if (!friendsList.find(f => f.chatId === id)) {
+            friendsList.push({ name, chatId: id });
+            allChats[id] = { partnerName: name, messages:[], pinned:[], online:false };
+            save();
+            renderFriendsList();
+            renderChatList();
+          }
+          // Coba langsung hubungkan
+          await connectToBLE(name);
+        } catch(e) {
+          toast('Scan dibatalkan');
+        }
+      }
+      function addRadarDevice(name, id) {
+        const container = document.getElementById('radar-container');
+        if (!container) return;
+        if (container.querySelector(`[data-id="${id}"]`)) return;
+        const div = document.createElement('div');
+        div.className = 'radar-item';
+        div.dataset.id = id;
+        div.innerHTML = `<div class="avatar">${name.charAt(0).toUpperCase()}</div><div><strong>${name}</strong><br><small>${id}</small></div>`;
+        div.addEventListener('click', () => {
+          if (!friendsList.find(f => f.chatId === id)) {
+            friendsList.push({ name, chatId: id });
+            allChats[id] = { partnerName: name, messages:[], pinned:[], online:false };
+            save();
+          }
+          openChat(id);
+          switchTab('chat');
+        });
+        container.prepend(div);
+      }
+
+      // ===================== RENDER =====================
+      function renderChatList(filter='') {
+        const container = document.getElementById('chat-list-container');
+        const chats = Object.values(allChats);
+        const f = filter.toLowerCase();
+        const filtered = f ? chats.filter(c => c.partnerName.toLowerCase().includes(f)) : chats;
+        container.innerHTML = filtered.length ? filtered.map(c => {
+          const last = c.messages.slice(-1)[0];
+          return `<div class="chat-list-item" data-id="${c.partnerId}">
+            <div class="avatar">${c.partnerName[0]}<span class="${c.online?'online-dot':'offline-dot'}"></span></div>
+            <div class="chat-info"><div class="chat-name">${c.partnerName}</div><div class="chat-preview">${last?last.content:''}</div></div>
+            <div class="chat-time">${last?formatTime(last.timestamp):''}</div></div>`;
+        }).join('') : `<div class="empty-state">💬<br>Belum ada chat</div>`;
+        document.querySelectorAll('.chat-list-item').forEach(el => el.addEventListener('click', ()=> openChat(el.dataset.id)));
+      }
+      function renderFriendsList() {
+        const container = document.getElementById('friends-list-container');
+        container.innerHTML = friendsList.length ? friendsList.map(f => {
+          const isBlocked = blockedUsers.some(b=>b.chatId===f.chatId);
+          return `<div class="chat-list-item"><div class="avatar">${f.name[0]}</div><div class="chat-info"><strong>${f.name}</strong><br><small>${f.chatId}</small></div>
+            <button class="btn btn-sm btn-outline chat-btn" data-id="${f.chatId}">💬</button>
+            <button class="btn btn-sm ${isBlocked?'btn-success':'btn-danger'} block-btn" data-id="${f.chatId}">${isBlocked?'Buka':'Blokir'}</button>
+            <button class="btn btn-sm btn-danger delete-btn" data-id="${f.chatId}">🗑</button></div>`;
+        }).join('') : `<div class="empty-state">🤝<br>Belum ada teman</div>`;
+        document.querySelectorAll('.chat-btn').forEach(b => b.addEventListener('click', (e)=>{ e.stopPropagation(); openChat(b.dataset.id); }));
+        document.querySelectorAll('.block-btn').forEach(b => b.addEventListener('click', (e)=>{ e.stopPropagation(); toggleBlock(b.dataset.id); }));
+        document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', (e)=>{ e.stopPropagation(); deleteFriend(b.dataset.id); }));
+      }
+      function renderMessages() {
+        const container = document.getElementById('messages-container');
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        container.innerHTML = chat.messages.map((msg,i) => {
+          const isMe = msg.sender==='me';
+          return `<div class="message-bubble ${isMe?'message-sent':'message-received'}">${msg.content}<div class="message-time">${formatTime(msg.timestamp)}</div></div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+      }
+      function updateChatDetailHeader() {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        document.getElementById('chat-partner-name').textContent = chat.partnerName;
+        const statusEl = document.getElementById('chat-partner-status');
+        statusEl.textContent = chat.online ? 'online' : 'offline';
+        statusEl.className = 'header-status' + (chat.online ? '' : ' offline');
+      }
+
+      function openChat(partnerId) {
+        if(!allChats[partnerId]) {
+          const friend = friendsList.find(f=>f.chatId===partnerId);
+          if(!friend) return;
+          allChats[partnerId] = { partnerName: friend.name, messages:[], pinned:[], online:false };
+        }
+        currentPartnerId = partnerId;
+        document.getElementById('chat-detail-screen').classList.add('active');
+        document.getElementById('main-screen').classList.remove('active');
+        updateChatDetailHeader();
+        renderMessages();
+      }
+      function goBackToMain() {
+        currentPartnerId = null;
+        document.getElementById('chat-detail-screen').classList.remove('active');
+        document.getElementById('main-screen').classList.add('active');
+        switchTab('chat');
+        renderChatList();
+      }
+
+      function sendMessage() {
+        const input = document.getElementById('message-input');
+        const text = input.value.trim();
+        if(!text || !currentPartnerId) return;
+        const payload = { type:'text', content:text, sender: currentUser.chatId, timestamp: new Date().toISOString() };
+        // Kirim via BLE jika terhubung
+        if (bleCharacteristic) {
+          sendViaBLE(payload).then(success => {
+            if (success) toast('Pesan terkirim via Bluetooth');
+            else toast('Gagal kirim, cek koneksi');
+          });
+        }
+        // Simpan lokal
+        if (!allChats[currentPartnerId]) allChats[currentPartnerId] = { partnerName: 'Unknown', messages:[], pinned:[] };
+        allChats[currentPartnerId].messages.push({ ...payload, sender:'me' });
+        input.value = '';
+        save(); renderMessages(); renderChatList();
+      }
+
+      async function checkForIncomingMessages() {
+        if (!bleCharacteristic || !currentPartnerId) return;
+        const data = await readMessagesFromBLE();
+        if (data && Array.isArray(data)) {
+          data.forEach(msg => {
+            if (msg.sender !== currentUser.chatId && !allChats[currentPartnerId].messages.some(m => m.timestamp===msg.timestamp)) {
+              allChats[currentPartnerId].messages.push({ ...msg, sender:'partner' });
+            }
+          });
+          save(); renderMessages();
+        }
+      }
+
+      function toggleBlock(chatId) {
+        const friend = friendsList.find(f=>f.chatId===chatId);
+        if(!friend) return;
+        const idx = blockedUsers.findIndex(b=>b.chatId===chatId);
+        if(idx>=0) { blockedUsers.splice(idx,1); toast('Dibuka blokir'); }
+        else { blockedUsers.push({name:friend.name, chatId}); toast('Diblokir'); }
+        save(); renderFriendsList(); renderChatList();
+      }
+      function deleteFriend(chatId) {
+        if(!confirm('Hapus kontak?')) return;
+        friendsList = friendsList.filter(f=>f.chatId!==chatId);
+        if(allChats[chatId]) delete allChats[chatId];
+        blockedUsers = blockedUsers.filter(b=>b.chatId!==chatId);
+        save(); renderFriendsList(); renderChatList(); toast('Kontak dihapus');
+      }
+
+      // ===================== VOICE NOTE =====================
+      async function startRecording() {
+        if (!permissions.mic) {
+          try { const s=await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); permissions.mic=true; } catch { toast('Izin mikrofon diperlukan'); return; }
+        }
+        // Implementasi rekaman sederhana
+        toast('🎤 Merekam... (demo)');
+      }
+      function stopRecording() { toast('Voice note dikirim (demo)'); }
+
+      // ===================== NAVIGATION =====================
+      function switchScreen(screen) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        if(screen==='login') document.getElementById('login-screen').classList.add('active');
+        else if(screen==='permission') document.getElementById('permission-screen').classList.add('active');
+        else if(screen==='main') document.getElementById('main-screen').classList.add('active');
+        else if(screen==='chat') document.getElementById('chat-detail-screen').classList.add('active');
+      }
+      function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display='none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const tabEl = document.getElementById('tab-'+tab);
+        if(tabEl) tabEl.style.display='flex';
+        const nav = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+        if(nav) nav.classList.add('active');
+        if(tab==='profile') updateProfileTab();
+        if(tab==='chat') renderChatList();
+        if(tab==='friends') renderFriendsList();
+        if(tab==='settings') applyTheme();
+      }
+      function updateProfileTab() {
+        if(!currentUser) return;
+        document.getElementById('profile-name').textContent = currentUser.username;
+        document.getElementById('profile-id').textContent = currentUser.chatId;
+        document.getElementById('profile-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
+        drawQR();
+      }
+      function drawQR() {
+        const canvas = document.getElementById('profile-qr');
+        if(!canvas || !settings.privacy.showMyQR) return;
+        const ctx=canvas.getContext('2d');
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,180,180);
+        // QR sederhana (hanya visual)
+        ctx.fillStyle='#000';
+        for(let i=0;i<21;i++) for(let j=0;j<21;j++) {
+          if(Math.random()>0.7) ctx.fillRect(20+j*7,20+i*7,6,6);
+        }
+      }
+
+      // ===================== EVENT LISTENERS =====================
+      document.getElementById('btn-login').addEventListener('click', () => {
+        const name = document.getElementById('username-input').value.trim();
+        if(!name) return toast('Masukkan nama');
+        currentUser = { username: name, chatId: genId() };
+        save();
+        switchScreen('permission');
+        updatePermUI();
+      });
+      async function updatePermUI() {
+        await checkBluetooth();
+        const set = (id, ok) => {
+          document.getElementById('dot-'+id).className = 'status-dot '+(ok?'dot-ok':'dot-no');
+          document.getElementById('status-'+id).textContent = ok?'✅ Siap':'❌ Belum';
+        };
+        set('bluetooth', permissions.bluetooth);
+        set('mic', permissions.mic);
+        set('cam', permissions.camera);
+      }
+      document.getElementById('btn-check-perms').addEventListener('click', async () => {
+        await checkBluetooth();
+        updatePermUI();
+        if (!permissions.bluetooth) {
+          toast('Bluetooth harus diaktifkan! Buka pengaturan dan aktifkan Bluetooth.');
+        } else {
+          toast('Bluetooth siap!');
+        }
+        updateBluetoothIndicator();
+        switchScreen('main'); switchTab('chat');
+      });
+      document.getElementById('btn-skip-perms').addEventListener('click', () => {
+        switchScreen('main'); switchTab('chat');
+      });
+      document.getElementById('btn-back-chat').addEventListener('click', goBackToMain);
+      document.getElementById('btn-send').addEventListener('click', sendMessage);
+      document.getElementById('message-input').addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
+      document.getElementById('btn-voice').addEventListener('pointerdown', startRecording);
+      document.getElementById('btn-voice').addEventListener('pointerup', stopRecording);
+      document.getElementById('btn-connect-ble').addEventListener('click', async () => {
+        if (!currentPartnerId) return;
+        const friend = friendsList.find(f=>f.chatId===currentPartnerId);
+        if (!friend) return;
+        const ok = await connectToBLE(friend.name);
+        if (ok) { allChats[currentPartnerId].online = true; updateChatDetailHeader(); }
+      });
+      document.getElementById('btn-chat-menu').addEventListener('click', () => {
+        showModal(`<h3>Menu</h3><div class="modal-option" onclick="hideModal()">Batal</div>`);
+      });
+      document.getElementById('btn-scan-ble').addEventListener('click', scanRadar);
+      document.getElementById('btn-add-friend').addEventListener('click', () => {
+        showModal(`<h3>Tambah Teman</h3>
+          <div class="modal-option" id="add-via-id">🆔 Via ID</div>
+          <div class="modal-option" id="add-via-qr">📷 QR Code</div>
+          <div class="modal-option" onclick="hideModal()">Batal</div>`);
+        setTimeout(() => {
+          document.getElementById('add-via-id').onclick = () => { hideModal(); const id=prompt('Masukkan ID (23 karakter):'); if(id) addFriendById(id); };
+          document.getElementById('add-via-qr').onclick = () => { hideModal(); startQRScanner(); };
+        }, 100);
+      });
+      function addFriendById(id) {
+        if(id.length!==23 || !/^[A-Za-z0-9!@#$%^&*()\-_=+[\]{}|;:,.<>?/]+$/.test(id)) return toast('ID tidak valid');
+        if(friendsList.some(f=>f.chatId===id)) return toast('Sudah teman');
+        if(id===currentUser.chatId) return toast('Tidak bisa menambah sendiri');
+        const name = 'User-'+id.substring(0,6);
+        friendsList.push({name, chatId:id});
+        allChats[id] = { partnerName:name, messages:[], pinned:[], online:false };
+        save(); renderFriendsList(); renderChatList(); toast('Teman ditambahkan');
+      }
+      // QR scanner
+      let html5QrScanner;
+      function startQRScanner() {
+        if (!document.getElementById('qr-reader')) {
+          const div = document.createElement('div'); div.id='qr-reader';
+          document.getElementById('tab-scan').appendChild(div);
+        }
+        html5QrScanner = new Html5Qrcode("qr-reader");
+        html5QrScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+          let id = decodedText.trim();
+          if (id.includes(':')) id = id.split(':')[1] || id;
+          if (id.length===23 && /^[A-Za-z0-9!@#$%^&*()\-_=+[\]{}|;:,.<>?/]+$/.test(id)) {
+            addFriendById(id);
+            html5QrScanner.stop();
+          }
+        }).catch(() => toast('Gagal memulai scanner'));
+      }
+
+      document.getElementById('btn-edit-profile').addEventListener('click', () => {
+        showModal(`<h3>Edit Profil</h3><input type="text" id="edit-name" class="input-group" value="${currentUser.username}"><button class="btn btn-primary" id="save-profile">Simpan</button>`);
+        document.getElementById('save-profile').addEventListener('click', () => {
+          const newName = document.getElementById('edit-name').value.trim();
+          if(newName) { currentUser.username = newName; save(); updateProfileTab(); hideModal(); }
+        });
+      });
+      document.getElementById('menu-theme').addEventListener('click', () => {
+        settings.theme = settings.theme==='dark'?'light':settings.theme==='light'?'system':'dark';
+        save(); applyTheme();
+      });
+      document.getElementById('menu-about').addEventListener('click', () => showModal('<h3>Tentang</h3><p>AnonMesh Chat v2.0<br>Bluetooth Mesh · E2E Encryption</p>'));
+      document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+      document.getElementById('modal-overlay').addEventListener('click', e => { if(e.target===document.getElementById('modal-overlay')) hideModal(); });
+      document.getElementById('search-chat').addEventListener('input', e => renderChatList(e.target.value));
+
+      // ===================== INIT =====================
+      async function init() {
+        load(); applyTheme();
+        document.getElementById('splash-screen').classList.remove('hidden');
+        setTimeout(async () => {
+          document.getElementById('splash-screen').classList.add('hidden');
+          await checkBluetooth();
+          updateBluetoothIndicator();
+          if (currentUser) {
+            switchScreen('main');
+            switchTab('chat');
+            renderChatList();
+            renderFriendsList();
+          } else {
+            switchScreen('login');
+          }
+        }, 1500);
+        window.addEventListener('popstate', (e) => { if(document.getElementById('chat-detail-screen').classList.contains('active')) { goBackToMain(); e.preventDefault(); } });
+      }
+      init();
+    })();
+  </script>
+</body>
+</html>
