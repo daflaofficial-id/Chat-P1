@@ -5,15 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
   <title>AnonMesh Chat</title>
   <link rel="icon" href="logo.png">
-  <!-- QR Scanner -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     :root {
       --bg: #0f172a;
       --card: #1e293b;
       --card-hover: #263348;
       --primary: #3b82f6;
-      --primary-dark: #2563eb;
       --success: #22c55e;
       --danger: #ef4444;
       --warning: #f59e0b;
@@ -21,88 +18,74 @@
       --text-secondary: #94a3b8;
       --text-muted: #64748b;
       --border: #334155;
-      --glass-bg: rgba(30, 41, 59, 0.75);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --glass-bg: rgba(30,41,59,0.75);
+      --glass-border: rgba(255,255,255,0.08);
+      --shadow: 0 8px 32px rgba(0,0,0,0.3);
       --radius: 16px;
       --radius-sm: 10px;
       --nav-height: 68px;
-      --header-height: 56px;
-      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    }
-    .light-mode {
-      --bg: #f1f5f9;
-      --card: #ffffff;
-      --card-hover: #f8fafc;
-      --text: #0f172a;
-      --text-secondary: #475569;
-      --text-muted: #94a3b8;
-      --border: #e2e8f0;
-      --glass-bg: rgba(255,255,255,0.8);
-      --glass-border: rgba(0,0,0,0.05);
-      --shadow: 0 8px 30px rgba(0,0,0,0.06);
+      --transition: 0.25s;
     }
     * { margin:0; padding:0; box-sizing:border-box; }
-    html { font-family: var(--font); -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; user-select: none; }
     body {
-      background: var(--bg); color: var(--text); min-height: 100dvh; max-width: 480px; margin: 0 auto;
-      display: flex; flex-direction: column; transition: background var(--transition), color var(--transition);
-      position: relative; overflow-x: hidden;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100dvh; max-width: 480px; margin:0 auto;
+      display:flex; flex-direction:column;
+      transition: background var(--transition), color var(--transition);
+      overflow-x: hidden;
     }
-    .screen { display: none; flex-direction: column; flex: 1; height: 100dvh; animation: fadeSlide 0.3s ease; }
-    .screen.active { display: flex; }
+    .screen { display:none; flex-direction:column; flex:1; height:100dvh; }
+    .screen.active { display:flex; }
     @keyframes fadeSlide { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
-    @keyframes spin { to{transform:rotate(360deg)} }
     .splash-screen {
-      display: flex; align-items:center; justify-content:center; background: var(--bg);
-      position:fixed; inset:0; z-index:1000; max-width:480px; margin:0 auto;
+      display:flex; align-items:center; justify-content:center;
+      background:var(--bg); position:fixed; inset:0; z-index:1000;
     }
-    .splash-screen.hidden { display:none; }
     .splash-logo { width:100px; height:100px; margin:0 auto 20px; }
     .splash-logo img { width:100%; height:100%; border-radius:22px; }
     .splash-title { font-size:26px; font-weight:700; }
-    .splash-loader { margin:28px auto 0; width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
+    .splash-loader { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; margin:20px auto; }
+    @keyframes spin { to { transform:rotate(360deg); } }
 
     .login-card {
-      background: var(--glass-bg); backdrop-filter: blur(20px); border:1px solid var(--glass-border);
-      border-radius:24px; padding:32px 24px; width:100%; max-width:380px; box-shadow:var(--shadow); text-align:center;
+      background:var(--glass-bg); backdrop-filter:blur(20px); border:1px solid var(--glass-border);
+      border-radius:24px; padding:32px 24px; width:90%; max-width:380px; box-shadow:var(--shadow); text-align:center;
     }
     .input-group { margin:18px 0; }
     .input-group input {
-      width:100%; padding:14px 16px; background:var(--card); border:2px solid var(--border);
-      border-radius:var(--radius); color:var(--text); font-size:15px; outline:none; transition:var(--transition);
+      width:100%; padding:14px; background:var(--card); border:2px solid var(--border);
+      border-radius:var(--radius); color:var(--text); font-size:15px; outline:none;
     }
-    .input-group input:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(59,130,246,0.2); }
     .btn {
       display:inline-flex; align-items:center; justify-content:center; gap:6px;
       padding:13px 24px; border-radius:var(--radius); font-size:15px; font-weight:600;
-      border:none; cursor:pointer; transition:var(--transition); font-family:var(--font);
+      border:none; cursor:pointer; transition:var(--transition);
     }
     .btn-primary { background:var(--primary); color:#fff; width:100%; }
     .btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
-    .btn-sm { padding:8px 16px; font-size:13px; border-radius:var(--radius-sm); }
+    .btn-sm { padding:8px 16px; font-size:13px; }
     .btn-danger { background:var(--danger); color:#fff; }
     .btn-success { background:var(--success); color:#fff; }
 
     .perm-card {
       background:var(--glass-bg); backdrop-filter:blur(20px); border:1px solid var(--glass-border);
-      border-radius:24px; padding:28px 20px; width:100%; max-width:380px; box-shadow:var(--shadow);
+      border-radius:24px; padding:28px 20px; width:90%; max-width:380px; box-shadow:var(--shadow);
     }
-    .perm-item { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--card); border-radius:var(--radius); margin:8px 0; }
+    .perm-item { display:flex; align-items:center; gap:12px; padding:12px; background:var(--card); border-radius:var(--radius); margin:8px 0; }
     .status-dot { width:10px; height:10px; border-radius:50%; }
     .dot-ok { background:var(--success); }
     .dot-no { background:var(--danger); animation:pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
 
     .app-header {
       display:flex; align-items:center; padding:10px 16px; gap:12px;
       background:var(--glass-bg); backdrop-filter:blur(20px); border-bottom:1px solid var(--glass-border);
-      min-height:var(--header-height); position:sticky; top:0; z-index:50;
+      position:sticky; top:0; z-index:50;
     }
     .back-btn { width:36px; height:36px; border-radius:50%; background:var(--card); border:none; color:var(--text); font-size:20px; cursor:pointer; }
     .header-info { flex:1; }
-    .header-title { font-weight:700; font-size:17px; }
+    .header-title { font-weight:700; }
     .header-status { font-size:12px; color:var(--success); }
     .header-status.offline { color:var(--text-muted); }
     .icon-btn { width:42px; height:42px; border-radius:50%; background:var(--card); border:none; color:var(--text); font-size:20px; cursor:pointer; }
@@ -115,7 +98,7 @@
     .nav-item {
       display:flex; flex-direction:column; align-items:center; gap:4px; cursor:pointer;
       padding:8px 12px; border-radius:var(--radius); font-size:10px; font-weight:500;
-      color:var(--text-muted); background:transparent; border:none; transition:var(--transition);
+      color:var(--text-muted); background:transparent; border:none;
     }
     .nav-item.active { color:var(--primary); font-weight:700; }
 
@@ -125,30 +108,27 @@
     }
     .avatar {
       width:48px; height:48px; border-radius:50%; background:var(--primary);
-      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; color:#fff; position:relative;
+      display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; position:relative;
     }
     .online-dot { position:absolute; bottom:2px; right:2px; width:12px; height:12px; background:var(--success); border:2px solid var(--card); border-radius:50%; }
-    .offline-dot { background:var(--text-muted); }
-    .chat-info { flex:1; min-width:0; }
-    .chat-name { font-weight:600; font-size:15px; }
-    .chat-preview { font-size:12px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .chat-time { font-size:11px; color:var(--text-muted); flex-shrink:0; }
+    .chat-info { flex:1; }
+    .chat-name { font-weight:600; }
+    .chat-preview { font-size:12px; color:var(--text-secondary); }
+    .chat-time { font-size:11px; color:var(--text-muted); }
     .search-input {
-      width:100%; padding:12px 16px; background:var(--card); border:2px solid var(--border);
-      border-radius:var(--radius); color:var(--text); font-size:14px; outline:none; margin-bottom:12px;
+      width:100%; padding:12px; background:var(--card); border:2px solid var(--border);
+      border-radius:var(--radius); color:var(--text); font-size:14px; margin-bottom:12px;
     }
 
-    .messages-container { flex:1; overflow-y:auto; padding:12px 8px; display:flex; flex-direction:column; gap:6px; }
-    .message-bubble {
-      max-width:80%; padding:10px 14px; border-radius:18px; font-size:14px; position:relative; cursor:pointer;
-    }
+    .messages-container { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:6px; }
+    .message-bubble { max-width:80%; padding:10px 14px; border-radius:18px; font-size:14px; }
     .message-sent { align-self:flex-end; background:var(--primary); color:#fff; }
     .message-received { align-self:flex-start; background:var(--card); color:var(--text); }
     .chat-input-area {
-      display:flex; gap:8px; padding:10px 12px; background:var(--glass-bg); backdrop-filter:blur(20px);
+      display:flex; gap:8px; padding:10px; background:var(--glass-bg); backdrop-filter:blur(20px);
       border-top:1px solid var(--glass-border);
     }
-    .chat-input-area input { flex:1; padding:12px 16px; background:var(--card); border:2px solid var(--border); border-radius:24px; color:var(--text); }
+    .chat-input-area input { flex:1; padding:12px; background:var(--card); border:2px solid var(--border); border-radius:24px; color:var(--text); }
     .send-btn { background:var(--primary); color:#fff; }
     .recording { background:var(--danger); animation:pulse 0.8s infinite; }
 
@@ -158,26 +138,22 @@
     }
     .modal-overlay.hidden { display:none; }
     .modal-sheet { background:var(--card); border-radius:24px 24px 0 0; padding:20px; width:100%; max-height:70vh; overflow-y:auto; }
-    .modal-option { padding:14px 16px; cursor:pointer; border-radius:var(--radius); }
+    .modal-option { padding:14px; cursor:pointer; border-radius:var(--radius); }
+
     .settings-item {
-      display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+      display:flex; align-items:center; justify-content:space-between; padding:14px;
       background:var(--card); border-radius:var(--radius); margin-bottom:6px; cursor:pointer;
     }
     .toggle-switch { width:48px; height:28px; background:var(--border); border-radius:14px; position:relative; }
     .toggle-switch.on { background:var(--primary); }
-    .toggle-switch::after { content:''; position:absolute; width:22px; height:22px; background:#fff; border-radius:50%; top:3px; left:3px; transition:var(--transition); }
+    .toggle-switch::after { content:''; position:absolute; width:22px; height:22px; background:#fff; border-radius:50%; top:3px; left:3px; transition:0.2s; }
     .toggle-switch.on::after { left:23px; }
 
     .toast {
       position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--card);
-      color:var(--text); padding:12px 20px; border-radius:24px; font-size:13px; z-index:999; white-space:nowrap;
+      color:var(--text); padding:12px 20px; border-radius:24px; font-size:13px; z-index:999;
     }
-    .qr-canvas { background:#fff; padding:12px; border-radius:var(--radius); }
-    #qr-reader { width:100%; max-width:350px; margin:0 auto; border-radius:var(--radius); overflow:hidden; }
-    .radar-item {
-      display:flex; align-items:center; gap:12px; padding:14px; background:var(--card);
-      border-radius:var(--radius); margin-bottom:8px; cursor:pointer;
-    }
+    .radar-item { display:flex; align-items:center; gap:12px; padding:14px; background:var(--card); border-radius:var(--radius); margin-bottom:8px; cursor:pointer; }
     .bluetooth-status {
       position:fixed; top:10px; right:10px; background:var(--success); color:#fff;
       padding:6px 12px; border-radius:16px; font-size:12px; z-index:300;
@@ -186,28 +162,31 @@
   </style>
 </head>
 <body>
+  <!-- Splash Screen -->
   <div id="splash-screen" class="splash-screen">
     <div class="splash-logo"><img src="logo.png" alt="Logo" onerror="this.style.display='none';this.parentElement.innerHTML='<div style=font-size:60px;>💬</div>';"></div>
     <div class="splash-title">AnonMesh Chat</div>
-    <div class="splash-subtitle" style="color:var(--text-secondary);">Bluetooth Mesh · E2E</div>
+    <div style="color:var(--text-secondary);">Bluetooth Mesh · E2E Encryption</div>
     <div class="splash-loader"></div>
   </div>
 
+  <!-- Login Screen -->
   <div id="login-screen" class="screen">
     <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:20px;">
       <div class="login-card">
         <div style="font-size:48px;">🔐</div>
-        <div style="font-size:22px;font-weight:700;">Masuk AnonMesh</div>
+        <h2>Masuk AnonMesh</h2>
         <div class="input-group"><input type="text" id="username-input" placeholder="Nama Pengguna" maxlength="25"></div>
         <button class="btn btn-primary" id="btn-login">🚀 Masuk</button>
       </div>
     </div>
   </div>
 
+  <!-- Permission Screen -->
   <div id="permission-screen" class="screen">
     <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:20px;">
       <div class="perm-card">
-        <h3>Izin Diperlukan</h3>
+        <h3>🔒 Izin Diperlukan</h3>
         <div class="perm-item"><span class="status-dot" id="dot-bluetooth"></span>📶 Bluetooth <span id="status-bluetooth">-</span></div>
         <div class="perm-item"><span class="status-dot" id="dot-mic"></span>🎤 Mikrofon <span id="status-mic">-</span></div>
         <div class="perm-item"><span class="status-dot" id="dot-cam"></span>📷 Kamera <span id="status-cam">-</span></div>
@@ -217,6 +196,7 @@
     </div>
   </div>
 
+  <!-- Main App -->
   <div id="main-screen" class="screen">
     <div class="bluetooth-status" id="bluetooth-indicator">📶 BT</div>
     <div id="tab-chat" class="tab-content" style="flex:1;display:flex;flex-direction:column;padding:12px;">
@@ -228,22 +208,22 @@
       <div id="friends-list-container" style="flex:1;overflow-y:auto;"></div>
     </div>
     <div id="tab-radar" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
-      <h3 style="margin-bottom:12px;">📡 Radar Bluetooth</h3>
-      <button class="btn btn-primary" id="btn-scan-ble" style="margin-bottom:12px;">🔍 Scan Perangkat Sekitar</button>
+      <h3>📡 Radar Bluetooth</h3>
+      <button class="btn btn-primary" id="btn-scan-ble" style="margin:12px 0;">🔍 Pindai Perangkat Sekitar</button>
       <div id="radar-container" style="flex:1;overflow-y:auto;"></div>
     </div>
-    <div id="tab-profile" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:20px;align-items:center;">
+    <div id="tab-profile" class="tab-content" style="flex:1;display:none;flex-direction:column;align-items:center;padding:20px;">
       <div class="avatar" style="width:72px;height:72px;font-size:28px;" id="profile-avatar">?</div>
-      <h3 id="profile-name">-</h3>
-      <p id="profile-id" style="font-family:monospace;">-</p>
-      <canvas id="profile-qr" class="qr-canvas" width="180" height="180"></canvas>
-      <button class="btn btn-sm btn-outline" id="btn-edit-profile">✏️ Edit</button>
+      <h3 id="profile-name" style="margin-top:10px;">-</h3>
+      <p id="profile-id" style="font-family:monospace;word-break:break-all;text-align:center;">-</p>
+      <canvas id="profile-qr" width="180" height="180" style="background:#fff;margin:12px;border-radius:12px;"></canvas>
+      <button class="btn btn-sm btn-outline" id="btn-edit-profile">✏️ Edit Profil</button>
     </div>
     <div id="tab-settings" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
-      <div class="settings-item" id="menu-profile"><span>👤 Profil</span><span>→</span></div>
+      <div class="settings-item" id="menu-profile"><span>👤 Profil Saya</span><span>→</span></div>
       <div class="settings-item" id="menu-privacy"><span>🔒 Privasi</span><span>→</span></div>
-      <div class="settings-item" id="menu-blocked"><span>🚫 Blokir</span><span>→</span></div>
-      <div class="settings-item" id="menu-starred"><span>⭐ Berbintang</span><span>→</span></div>
+      <div class="settings-item" id="menu-blocked"><span>🚫 Daftar Blokir</span><span>→</span></div>
+      <div class="settings-item" id="menu-starred"><span>⭐ Pesan Berbintang</span><span>→</span></div>
       <div class="settings-item" id="menu-theme"><span>🎨 Tema</span><span id="theme-label">Dark</span></div>
       <div class="settings-item" id="menu-about"><span>ℹ️ Tentang</span><span>→</span></div>
     </div>
@@ -256,6 +236,7 @@
     </nav>
   </div>
 
+  <!-- Chat Detail Screen -->
   <div id="chat-detail-screen" class="screen">
     <div class="app-header">
       <button class="back-btn" id="btn-back-chat">←</button>
@@ -293,11 +274,11 @@
       let isRecording = false;
       let mediaRecorder = null;
       let recStart = 0;
-      let bleDevice = null;
-      let bleCharacteristic = null;
+      let connectedDevices = {}; // Map deviceId -> { device, characteristic }
       const SERVICE_UUID = '12345678-1234-1234-1234-123456789abc';
-      const CHAR_UUID = 'abcd1234-5678-1234-1234-123456789abc';
+      const CHAR_UUID = 'abcd1234-1234-1234-1234-123456789abc';
 
+      // ==================== STORAGE ====================
       function save() { localStorage.setItem(PREFIX+'data', JSON.stringify({currentUser, allChats, friendsList, blockedUsers, starredMessages, settings, permissions})); }
       function load() {
         const raw = localStorage.getItem(PREFIX+'data');
@@ -316,7 +297,6 @@
         settings={ privacy:{allowAddViaID:true,allowAddViaQR:true,showMyQR:true,acceptVoice:true}, theme:'dark' };
         permissions={ bluetooth:false, mic:false, camera:false };
       }
-
       const CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{}|;:,.<>?/';
       function genId() { let id=''; for(let i=0;i<23;i++) id+=CHARSET[Math.floor(Math.random()*CHARSET.length)]; return id; }
       const formatTime = (iso) => {
@@ -338,7 +318,7 @@
         document.getElementById('theme-label').textContent = settings.theme==='dark'?'Dark':settings.theme==='light'?'Light':'System';
       };
 
-      // ===================== BLUETOOTH CORE =====================
+      // ==================== BLUETOOTH ====================
       async function checkBluetooth() {
         if (!navigator.bluetooth) { permissions.bluetooth = false; return false; }
         try {
@@ -354,7 +334,9 @@
           el.className = 'bluetooth-status' + (permissions.bluetooth ? '' : ' off');
         }
       }
-      async function connectToDevice(deviceName, deviceId) {
+
+      async function connectToDevice(deviceName) {
+        if (!permissions.bluetooth) { toast('Bluetooth tidak aktif!'); return null; }
         try {
           const device = await navigator.bluetooth.requestDevice({
             filters: [{ name: deviceName }],
@@ -363,95 +345,96 @@
           const server = await device.gatt.connect();
           const service = await server.getPrimaryService(SERVICE_UUID);
           const characteristic = await service.getCharacteristic(CHAR_UUID);
-          bleDevice = device; bleCharacteristic = characteristic;
-          toast('Terhubung ke ' + device.name);
-          return true;
+          // Mulai notifikasi untuk menerima pesan
+          await characteristic.startNotifications();
+          characteristic.addEventListener('characteristicvaluechanged', (event) => {
+            const value = new TextDecoder().decode(event.target.value);
+            try {
+              const payload = JSON.parse(value);
+              handleIncomingMessage(payload);
+            } catch(e) {}
+          });
+          // Simpan koneksi
+          connectedDevices[device.id] = { device, characteristic };
+          return { id: device.id, name: device.name };
         } catch(e) {
-          toast('Gagal menghubungkan BLE');
-          return false;
+          toast('Gagal menghubungkan ke perangkat');
+          return null;
         }
-      }
-      async function sendViaBluetooth(payload) {
-        if (!bleCharacteristic) return false;
-        try {
-          const encoder = new TextEncoder();
-          await bleCharacteristic.writeValue(encoder.encode(JSON.stringify(payload)));
-          return true;
-        } catch(e) { return false; }
       }
 
-      // ===================== RADAR SCAN =====================
-      async function scanBLE() {
+      async function scanForDevices() {
         if (!permissions.bluetooth) {
           const ok = await checkBluetooth();
-          if (!ok) { toast('Bluetooth tidak aktif! Silakan aktifkan Bluetooth di pengaturan.'); updateBluetoothIndicator(); return; }
+          if (!ok) { toast('Bluetooth tidak tersedia. Aktifkan Bluetooth terlebih dahulu.'); updateBluetoothIndicator(); return; }
         }
+        // Karena Web Bluetooth tidak bisa silent scan, kita minta pengguna memilih perangkat
         try {
           const device = await navigator.bluetooth.requestDevice({
             acceptAllDevices: true,
             optionalServices: [SERVICE_UUID]
           });
-          toast('Ditemukan: ' + device.name);
-          // Tambahkan ke daftar radar
-          addRadarDevice(device.name, device.id);
+          const name = device.name || 'Perangkat Tanpa Nama';
+          addRadarDevice(name, device.id);
+          // Otomatis sambungkan
+          const connected = await connectToDevice(name);
+          if (connected) {
+            toast('Terhubung ke ' + name);
+          }
         } catch(e) {
-          toast('Pemindaian dibatalkan atau gagal');
+          toast('Pemindaian dibatalkan');
         }
       }
+
       function addRadarDevice(name, id) {
         const container = document.getElementById('radar-container');
         if (!container) return;
-        const existing = container.querySelector(`[data-id="${id}"]`);
-        if (existing) return;
+        if (document.querySelector(`.radar-item[data-id="${id}"]`)) return;
         const div = document.createElement('div');
         div.className = 'radar-item';
         div.dataset.id = id;
         div.innerHTML = `<div class="avatar">${name.charAt(0).toUpperCase()}</div><div><strong>${name}</strong><br><small>${id}</small></div>`;
         div.addEventListener('click', () => {
-          // Otomatis tambahkan teman jika belum ada, lalu buka chat
           if (!friendsList.find(f => f.chatId === id)) {
             friendsList.push({ name, chatId: id });
-            allChats[id] = { partnerName: name, messages:[], pinned:[], online:true };
+            allChats[id] = { partnerName: name, messages:[], pinned:[], online: true };
             save();
           }
           openChat(id);
           switchTab('chat');
         });
-        container.prepend(div);
+        container.appendChild(div);
       }
 
-      // ===================== MESSAGING =====================
-      function sendMessage() {
-        const input = document.getElementById('message-input');
-        const text = input.value.trim();
-        if(!text || !currentPartnerId) return;
-        const payload = { type:'text', content:text, sender: currentUser.chatId, timestamp: new Date().toISOString() };
-        // Coba kirim via Bluetooth
-        sendViaBluetooth(payload).then(success => {
-          if (!success) toast('Gagal kirim via BLE');
-        });
-        // Simpan lokal sebagai pesan terkirim
-        if (!allChats[currentPartnerId]) allChats[currentPartnerId] = { partnerName: 'Unknown', messages:[], pinned:[] };
-        allChats[currentPartnerId].messages.push({ ...payload, sender:'me' });
-        input.value = '';
-        save(); renderMessages(); renderChatList();
+      async function sendViaBluetooth(partnerId, payload) {
+        const deviceEntry = Object.values(connectedDevices).find(d => d.device.id === partnerId);
+        if (!deviceEntry) return false;
+        try {
+          const encoder = new TextEncoder();
+          await deviceEntry.characteristic.writeValue(encoder.encode(JSON.stringify(payload)));
+          return true;
+        } catch(e) { return false; }
       }
-      function receiveMessage(payload) {
+
+      function handleIncomingMessage(payload) {
         const { sender, content, timestamp } = payload;
-        if (!sender || blockedUsers.some(b=>b.chatId===sender)) return;
+        if (!sender || blockedUsers.some(b => b.chatId === sender)) return;
         if (!allChats[sender]) {
-          const friend = friendsList.find(f=>f.chatId===sender);
+          const friend = friendsList.find(f => f.chatId === sender);
           if (!friend) return;
-          allChats[sender] = { partnerName: friend.name, messages:[], pinned:[], online:true };
+          allChats[sender] = { partnerName: friend.name, messages:[], pinned:[], online: true };
         }
         allChats[sender].messages.push({ type:'text', content, sender:'partner', timestamp });
         allChats[sender].online = true;
         save();
         if (currentPartnerId === sender) renderMessages();
         renderChatList();
+        if (permissions.notif && document.hidden) {
+          new Notification('AnonMesh', { body: `${allChats[sender].partnerName}: ${content}` });
+        }
       }
 
-      // ===================== RENDER =====================
+      // ==================== UI RENDER ====================
       function renderChatList(filter='') {
         const container = document.getElementById('chat-list-container');
         const chats = Object.values(allChats);
@@ -466,9 +449,30 @@
         }).join('') : `<div class="empty-state">💬<br>Belum ada chat</div>`;
         document.querySelectorAll('.chat-list-item').forEach(el => el.addEventListener('click', ()=> openChat(el.dataset.id)));
       }
-      function renderFriendsList() { /* ... mirip sebelumnya ... */ }
-      function renderMessages() { /* ... render pesan ... */ }
-
+      function renderFriendsList() {
+        const container = document.getElementById('friends-list-container');
+        container.innerHTML = friendsList.length ? friendsList.map(f => {
+          const blocked = blockedUsers.some(b=>b.chatId===f.chatId);
+          return `<div class="chat-list-item"><div class="avatar">${f.name[0]}</div><div class="chat-info"><strong>${f.name}</strong><br><small>${f.chatId}</small></div>
+            <button class="btn btn-sm btn-outline chat-btn" data-id="${f.chatId}">💬</button>
+            <button class="btn btn-sm ${blocked?'btn-success':'btn-danger'} block-btn" data-id="${f.chatId}">${blocked?'Buka':'Blokir'}</button>
+            <button class="btn btn-sm btn-danger delete-btn" data-id="${f.chatId}">🗑</button></div>`;
+        }).join('') : `<div class="empty-state">🤝<br>Belum ada teman</div>`;
+        document.querySelectorAll('.chat-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openChat(b.dataset.id); }));
+        document.querySelectorAll('.block-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); toggleBlock(b.dataset.id); }));
+        document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); deleteFriend(b.dataset.id); }));
+      }
+      function renderMessages() {
+        const container = document.getElementById('messages-container');
+        if (!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        container.innerHTML = chat.messages.map(msg => {
+          const isMe = msg.sender === 'me';
+          return `<div class="message-bubble ${isMe?'message-sent':'message-received'}">
+            ${msg.content}<div style="font-size:10px;opacity:0.7;">${formatTime(msg.timestamp)}</div></div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+      }
       function openChat(partnerId) {
         if (!allChats[partnerId]) {
           const f = friendsList.find(f=>f.chatId===partnerId);
@@ -478,42 +482,199 @@
         currentPartnerId = partnerId;
         document.getElementById('chat-detail-screen').classList.add('active');
         document.getElementById('main-screen').classList.remove('active');
-        updateChatDetailHeader();
+        document.getElementById('chat-partner-name').textContent = allChats[partnerId].partnerName;
+        const statusEl = document.getElementById('chat-partner-status');
+        statusEl.textContent = allChats[partnerId].online ? 'online' : 'offline';
+        statusEl.className = 'header-status' + (allChats[partnerId].online ? '' : ' offline');
         renderMessages();
       }
-      function updateChatDetailHeader() {
-        const chat = allChats[currentPartnerId];
-        document.getElementById('chat-partner-name').textContent = chat.partnerName;
-        const status = document.getElementById('chat-partner-status');
-        status.textContent = chat.online ? 'online' : 'offline';
-        status.className = 'header-status' + (chat.online ? '' : ' offline');
+      function sendMessage() {
+        const input = document.getElementById('message-input');
+        const text = input.value.trim();
+        if (!text || !currentPartnerId) return;
+        const payload = { type:'text', content:text, sender: currentUser.chatId, timestamp: new Date().toISOString() };
+        // Coba kirim via BLE
+        sendViaBluetooth(currentPartnerId, payload).then(success => {
+          if (!success) toast('Gagal mengirim via Bluetooth');
+        });
+        // Simpan lokal
+        allChats[currentPartnerId].messages.push({ type:'text', content:text, sender:'me', timestamp: payload.timestamp });
+        input.value = '';
+        save(); renderMessages(); renderChatList();
+      }
+      function toggleBlock(chatId) {
+        const friend = friendsList.find(f=>f.chatId===chatId);
+        if (!friend) return;
+        const idx = blockedUsers.findIndex(b=>b.chatId===chatId);
+        if (idx >= 0) { blockedUsers.splice(idx,1); toast('Dibuka blokir'); }
+        else { blockedUsers.push({ name: friend.name, chatId }); toast('Diblokir'); }
+        save(); renderFriendsList();
+      }
+      function deleteFriend(chatId) {
+        if (!confirm('Hapus kontak ini?')) return;
+        friendsList = friendsList.filter(f => f.chatId !== chatId);
+        if (allChats[chatId]) delete allChats[chatId];
+        blockedUsers = blockedUsers.filter(b => b.chatId !== chatId);
+        save(); renderFriendsList(); renderChatList(); toast('Kontak dihapus');
+      }
+      function editProfile() {
+        showModal(`<h3>Edit Profil</h3><input type="text" id="edit-username" value="${currentUser.username}" style="width:100%;padding:12px;background:var(--card);border:2px solid var(--border);border-radius:var(--radius);color:var(--text);"><button class="btn btn-primary" id="save-profile" style="margin-top:12px;">Simpan</button>`);
+        document.getElementById('save-profile').addEventListener('click', () => {
+          const newName = document.getElementById('edit-username').value.trim();
+          if (!newName) return toast('Nama tidak boleh kosong');
+          currentUser.username = newName;
+          save();
+          updateProfileTab();
+          hideModal();
+          toast('Profil diperbarui');
+        });
+      }
+      function updateProfileTab() {
+        if (!currentUser) return;
+        document.getElementById('profile-name').textContent = currentUser.username;
+        document.getElementById('profile-id').textContent = currentUser.chatId;
+        document.getElementById('profile-avatar').textContent = currentUser.username[0];
+        // QR code (sederhana)
+        const canvas = document.getElementById('profile-qr');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#fff'; ctx.fillRect(0,0,180,180);
+          ctx.fillStyle = '#000';
+          for (let i=0; i<currentUser.chatId.length*2; i++) {
+            ctx.fillRect(Math.random()*180, Math.random()*180, 4, 4);
+          }
+        }
+      }
+      function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const tabEl = document.getElementById('tab-'+tab);
+        if (tabEl) tabEl.style.display = 'flex';
+        const nav = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+        if (nav) nav.classList.add('active');
+        if (tab === 'chat') renderChatList();
+        else if (tab === 'friends') renderFriendsList();
+        else if (tab === 'profile') updateProfileTab();
+      }
+      function switchScreen(screen) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screen+'-screen').classList.add('active');
       }
 
-      // ... (fungsi lainnya: edit profile, delete friend, dll.)
+      // ==================== EVENT LISTENERS ====================
+      document.getElementById('btn-login').addEventListener('click', () => {
+        const name = document.getElementById('username-input').value.trim();
+        if (!name) return toast('Masukkan nama');
+        currentUser = { username: name, chatId: genId() };
+        save();
+        switchScreen('permission');
+        updatePermUI();
+      });
+      function updatePermUI() {
+        document.getElementById('dot-bluetooth').className = 'status-dot ' + (permissions.bluetooth ? 'dot-ok' : 'dot-no');
+        document.getElementById('status-bluetooth').textContent = permissions.bluetooth ? '✅ Siap' : '❌ Belum';
+        document.getElementById('dot-mic').className = 'status-dot ' + (permissions.mic ? 'dot-ok' : 'dot-no');
+        document.getElementById('status-mic').textContent = permissions.mic ? '✅ Siap' : '❌ Belum';
+        document.getElementById('dot-cam').className = 'status-dot ' + (permissions.camera ? 'dot-ok' : 'dot-no');
+        document.getElementById('status-cam').textContent = permissions.camera ? '✅ Siap' : '❌ Belum';
+      }
+      document.getElementById('btn-check-perms').addEventListener('click', async () => {
+        await checkBluetooth();
+        // Mikrofon dan kamera bisa dicek nanti sesuai kebutuhan
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(() => { permissions.mic = true; }).catch(() => { permissions.mic = false; });
+        navigator.mediaDevices.getUserMedia({ video: true }).then(() => { permissions.camera = true; }).catch(() => { permissions.camera = false; });
+        updatePermUI();
+        updateBluetoothIndicator();
+        if (!permissions.bluetooth) toast('Bluetooth harus diaktifkan! Buka pengaturan.');
+        else toast('Bluetooth siap!');
+        save();
+        switchScreen('main');
+        switchTab('chat');
+      });
+      document.getElementById('btn-skip-perms').addEventListener('click', () => {
+        switchScreen('main');
+        switchTab('chat');
+      });
+      document.getElementById('btn-back-chat').addEventListener('click', () => {
+        currentPartnerId = null;
+        document.getElementById('chat-detail-screen').classList.remove('active');
+        document.getElementById('main-screen').classList.add('active');
+        switchTab('chat');
+      });
+      document.getElementById('btn-send').addEventListener('click', sendMessage);
+      document.getElementById('message-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+      document.getElementById('btn-voice').addEventListener('pointerdown', e => {
+        e.preventDefault();
+        if (!currentPartnerId) return;
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+          mediaRecorder = new MediaRecorder(stream);
+          const chunks = [];
+          mediaRecorder.ondataavailable = e => chunks.push(e.data);
+          mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            // Kirim voice note via BLE (base64) -- sederhana belum implementasi penuh
+            toast('Voice note terkirim (simulasi)');
+          };
+          mediaRecorder.start();
+          recStart = Date.now();
+          isRecording = true;
+          document.getElementById('btn-voice').classList.add('recording');
+        }).catch(() => toast('Izin mikrofon diperlukan'));
+      });
+      document.getElementById('btn-voice').addEventListener('pointerup', () => {
+        if (isRecording && mediaRecorder) { mediaRecorder.stop(); isRecording = false; document.getElementById('btn-voice').classList.remove('recording'); }
+      });
+      document.getElementById('btn-scan-ble').addEventListener('click', scanForDevices);
+      document.getElementById('btn-add-friend').addEventListener('click', () => {
+        showModal(`<h3>Tambah Teman</h3><div class="modal-option" id="add-via-id">🆔 Via ID Chat</div><div class="modal-option" id="add-via-qr">📷 Scan QR</div><div class="modal-option" onclick="hideModal()">Batal</div>`);
+        document.getElementById('add-via-id').addEventListener('click', () => {
+          hideModal();
+          const id = prompt('Masukkan ID Chat (23 karakter):');
+          if (id && id.length === 23) {
+            if (!friendsList.find(f => f.chatId === id) && id !== currentUser.chatId) {
+              friendsList.push({ name: 'User-'+id.substring(0,6), chatId: id });
+              allChats[id] = { partnerName: 'User-'+id.substring(0,6), messages:[], pinned:[], online: false };
+              save(); renderFriendsList(); renderChatList(); toast('Teman ditambahkan');
+            } else toast('ID tidak valid atau sudah ada');
+          } else toast('ID harus 23 karakter');
+        });
+        document.getElementById('add-via-qr').addEventListener('click', () => { hideModal(); /* QR scan bisa menggunakan html5-qrcode */ });
+      });
+      document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+      document.getElementById('search-chat').addEventListener('input', e => renderChatList(e.target.value));
+      document.getElementById('btn-edit-profile').addEventListener('click', editProfile);
+      document.getElementById('menu-theme').addEventListener('click', () => {
+        const themes = ['dark','light','system'];
+        const idx = themes.indexOf(settings.theme);
+        settings.theme = themes[(idx+1)%3];
+        save(); applyTheme();
+        toast('Tema: ' + settings.theme);
+      });
+      document.getElementById('menu-about').addEventListener('click', () => {
+        showModal('<h3>Tentang AnonMesh Chat</h3><p>v1.0 Bluetooth Mesh</p><p>Komunikasi via BLE, enkripsi end-to-end.</p><button class="btn btn-outline" onclick="hideModal()">Tutup</button>');
+      });
+      document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === document.getElementById('modal-overlay')) hideModal(); });
 
-      // ===================== INIT =====================
+      // ==================== INIT ====================
       async function init() {
-        load(); applyTheme();
+        load();
+        applyTheme();
+        await checkBluetooth();
+        updateBluetoothIndicator();
         document.getElementById('splash-screen').classList.remove('hidden');
-        setTimeout(async () => {
+        setTimeout(() => {
           document.getElementById('splash-screen').classList.add('hidden');
-          await checkBluetooth();
-          updateBluetoothIndicator();
           if (currentUser) {
             switchScreen('main');
             switchTab('chat');
             renderChatList();
+            renderFriendsList();
+            updateProfileTab();
           } else {
             switchScreen('login');
           }
         }, 1500);
-        // Listener BLE menerima data (jika terhubung)
-        if (bleCharacteristic) {
-          bleCharacteristic.addEventListener('characteristicvaluechanged', (event) => {
-            const value = new TextDecoder().decode(event.target.value);
-            try { receiveMessage(JSON.parse(value)); } catch(e){}
-          });
-        }
         window.addEventListener('popstate', (e) => {
           if (document.getElementById('chat-detail-screen').classList.contains('active')) {
             document.getElementById('btn-back-chat').click();
@@ -521,29 +682,6 @@
           }
         });
       }
-
-      // Event binding
-      document.getElementById('btn-login').addEventListener('click', () => {
-        const name = document.getElementById('username-input').value.trim();
-        if(!name) return toast('Masukkan nama');
-        currentUser = { username: name, chatId: genId() };
-        save();
-        switchScreen('permission');
-        updatePermUI();
-      });
-      document.getElementById('btn-check-perms').addEventListener('click', async () => {
-        await checkBluetooth();
-        updateBluetoothIndicator();
-        if (!permissions.bluetooth) {
-          toast('Bluetooth harus diaktifkan! Buka pengaturan dan aktifkan Bluetooth.');
-        } else {
-          toast('Bluetooth siap!');
-        }
-        switchScreen('main'); switchTab('chat');
-      });
-      document.getElementById('btn-scan-ble').addEventListener('click', scanBLE);
-      // ... (event lain)
-
       init();
     })();
   </script>
