@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
+  <title>AnonMesh Chat</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-hover: #263348;
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #ffffff;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #334155;
+      --glass-bg: rgba(30, 41, 59, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --radius: 16px;
+      --radius-sm: 10px;
+      --nav-height: 68px;
+      --header-height: 56px;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+    .light-mode {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --card-hover: #f8fafc;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --glass-bg: rgba(255,255,255,0.8);
+      --glass-border: rgba(0,0,0,0.05);
+      --shadow: 0 8px 30px rgba(0,0,0,0.06);
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { font-family: var(--font); -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; user-select: none; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      transition: background var(--transition), color var(--transition);
+      position: relative;
+      overflow-x: hidden;
+    }
+    .screen {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      height: 100dvh;
+      animation: fadeSlide 0.3s ease;
+    }
+    .screen.active { display: flex; }
+    @keyframes fadeSlide { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+    @keyframes bounceIn { 0%{transform:scale(0.3);opacity:0} 50%{transform:scale(1.05)} 70%{transform:scale(0.95)} 100%{transform:scale(1);opacity:1} }
+    @keyframes spin { to{transform:rotate(360deg)} }
+    
+    /* Splash */
+    #splash-screen {
+      display: flex; align-items:center; justify-content:center;
+      background: var(--bg); position:fixed; inset:0; z-index:1000;
+      max-width:480px; margin:0 auto;
+    }
+    #splash-screen.hidden { display:none; }
+    .splash-content { text-align:center; animation:bounceIn 0.6s ease; }
+    .splash-logo { width:80px; height:80px; background:var(--primary); border-radius:22px; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; font-size:40px; box-shadow:0 16px 40px rgba(59,130,246,0.4); }
+    .splash-title { font-size:26px; font-weight:700; }
+    .splash-subtitle { font-size:13px; color:var(--text-secondary); letter-spacing:1px; margin-top:6px; }
+    .splash-loader { margin:28px auto 0; width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
+    
+    /* Login */
+    .login-card {
+      background: var(--glass-bg); backdrop-filter: blur(20px); border:1px solid var(--glass-border);
+      border-radius:24px; padding:32px 24px; width:100%; max-width:380px; box-shadow:var(--shadow); text-align:center;
+    }
+    .input-group { position:relative; margin:18px 0; }
+    .input-group input {
+      width:100%; padding:14px 16px; background:var(--card); border:2px solid var(--border);
+      border-radius:var(--radius); color:var(--text); font-size:15px; outline:none; transition:var(--transition);
+    }
+    .input-group input:focus { border-color:var(--primary); box-shadow:0 0 0 4px rgba(59,130,246,0.2); }
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:6px;
+      padding:13px 24px; border-radius:var(--radius); font-size:15px; font-weight:600;
+      border:none; cursor:pointer; transition:var(--transition); font-family:var(--font);
+    }
+    .btn-primary { background:var(--primary); color:#fff; width:100%; box-shadow:0 6px 20px rgba(59,130,246,0.3); }
+    .btn-primary:hover { background:var(--primary-dark); }
+    .btn-outline { background:transparent; border:2px solid var(--border); color:var(--text); }
+    .btn-sm { padding:8px 16px; font-size:13px; border-radius:var(--radius-sm); }
+    .btn-danger { background:var(--danger); color:#fff; }
+    .btn-success { background:var(--success); color:#fff; }
+    .btn-ghost { background:transparent; color:var(--text); }
+    
+    /* Permission */
+    .perm-card {
+      background:var(--glass-bg); backdrop-filter:blur(20px); border:1px solid var(--glass-border);
+      border-radius:24px; padding:28px 20px; width:100%; max-width:380px; box-shadow:var(--shadow); text-align:center;
+    }
+    .perm-item { display:flex; align-items:center; gap:12px; padding:12px 16px; background:var(--card); border-radius:var(--radius); margin:8px 0; font-size:14px; text-align:left; }
+    .status-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+    .dot-ok { background:var(--success); }
+    .dot-no { background:var(--danger); animation:pulse 1.5s infinite; }
+    
+    /* Header */
+    .app-header {
+      display:flex; align-items:center; padding:10px 16px; gap:12px;
+      background:var(--glass-bg); backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--glass-border); min-height:var(--header-height);
+      position:sticky; top:0; z-index:50; flex-shrink:0;
+    }
+    .back-btn {
+      width:36px; height:36px; border-radius:50%; background:var(--card); border:none;
+      color:var(--text); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    }
+    .header-info { flex:1; }
+    .header-title { font-weight:700; font-size:17px; }
+    .header-status { font-size:12px; color:var(--success); display:flex; align-items:center; gap:4px; }
+    .header-status.offline { color:var(--text-muted); }
+    .icon-btn {
+      width:42px; height:42px; border-radius:50%; background:var(--card); border:none;
+      color:var(--text); font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    }
+    
+    /* Bottom Nav */
+    .bottom-nav {
+      display:flex; justify-content:space-around; align-items:center;
+      background:var(--glass-bg); backdrop-filter:blur(20px);
+      border-top:1px solid var(--glass-border); padding:6px 8px;
+      position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+      width:100%; max-width:480px; z-index:200; height:var(--nav-height);
+    }
+    .nav-item {
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      cursor:pointer; padding:8px 12px; border-radius:var(--radius); font-size:10px;
+      font-weight:500; color:var(--text-muted); background:transparent; border:none;
+      transition:var(--transition);
+    }
+    .nav-item.active { color:var(--primary); font-weight:700; }
+    
+    /* Chat List */
+    .chat-list-item {
+      display:flex; align-items:center; gap:12px; padding:14px 16px;
+      background:var(--card); border-radius:var(--radius); cursor:pointer; transition:var(--transition);
+      border:1px solid transparent; margin-bottom:8px;
+    }
+    .chat-list-item:active { transform:scale(0.98); }
+    .avatar {
+      width:48px; height:48px; border-radius:50%; background:var(--primary);
+      display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; color:#fff; flex-shrink:0;
+      position:relative;
+    }
+    .online-dot {
+      position:absolute; bottom:2px; right:2px; width:12px; height:12px;
+      background:var(--success); border:2px solid var(--card); border-radius:50%;
+    }
+    .offline-dot { background:var(--text-muted); }
+    .chat-info { flex:1; min-width:0; }
+    .chat-name { font-weight:600; font-size:15px; }
+    .chat-preview { font-size:12px; color:var(--text-secondary); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .chat-time { font-size:11px; color:var(--text-muted); flex-shrink:0; }
+    .search-input {
+      width:100%; padding:12px 16px; background:var(--card); border:2px solid var(--border);
+      border-radius:var(--radius); color:var(--text); font-size:14px; outline:none; margin-bottom:12px;
+    }
+    
+    /* Messages */
+    .messages-container { flex:1; overflow-y:auto; padding:12px 8px; display:flex; flex-direction:column; gap:6px; }
+    .message-bubble {
+      max-width:80%; padding:10px 14px; border-radius:18px; font-size:14px; line-height:1.5;
+      position:relative; animation:fadeSlide 0.2s ease; cursor:pointer; word-break:break-word;
+    }
+    .message-sent { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-right-radius:6px; }
+    .message-received { align-self:flex-start; background:var(--card); color:var(--text); border-bottom-left-radius:6px; }
+    .message-time { font-size:10px; opacity:0.7; margin-top:4px; text-align:right; }
+    .message-status { font-size:10px; color:var(--success); margin-top:2px; text-align:right; }
+    .pinned-banner {
+      background:var(--warning); color:#000; padding:8px 12px; border-radius:var(--radius-sm);
+      font-size:12px; font-weight:600; margin-bottom:8px; display:flex; align-items:center; gap:6px;
+    }
+    .chat-input-area {
+      display:flex; align-items:center; gap:8px; padding:10px 12px;
+      background:var(--glass-bg); backdrop-filter:blur(20px); border-top:1px solid var(--glass-border);
+    }
+    .chat-input-area input {
+      flex:1; padding:12px 16px; background:var(--card); border:2px solid var(--border);
+      border-radius:24px; color:var(--text); font-size:14px; outline:none;
+    }
+    .send-btn { background:var(--primary); color:#fff; }
+    .recording { background:var(--danger); animation:pulse 0.8s infinite; }
+    
+    /* Modal */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:500;
+      display:flex; align-items:flex-end; justify-content:center; max-width:480px; margin:0 auto;
+    }
+    .modal-overlay.hidden { display:none; }
+    .modal-sheet {
+      background:var(--card); border-radius:24px 24px 0 0; padding:20px;
+      width:100%; max-height:70vh; overflow-y:auto; animation:slideUp 0.3s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-option {
+      padding:14px 16px; cursor:pointer; border-radius:var(--radius); font-size:14px;
+      display:flex; align-items:center; gap:10px; transition:var(--transition);
+    }
+    .modal-option:hover { background:var(--card-hover); }
+    
+    /* Settings */
+    .settings-item {
+      display:flex; align-items:center; justify-content:space-between; padding:14px 16px;
+      background:var(--card); border-radius:var(--radius); cursor:pointer; margin-bottom:6px;
+    }
+    .toggle-switch {
+      width:48px; height:28px; background:var(--border); border-radius:14px;
+      position:relative; cursor:pointer; transition:var(--transition);
+    }
+    .toggle-switch.on { background:var(--primary); }
+    .toggle-switch::after {
+      content:''; position:absolute; width:22px; height:22px; background:#fff;
+      border-radius:50%; top:3px; left:3px; transition:var(--transition);
+    }
+    .toggle-switch.on::after { left:23px; }
+    
+    .toast {
+      position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+      background:var(--card); color:var(--text); padding:12px 20px;
+      border-radius:24px; font-size:13px; font-weight:600; z-index:999;
+      box-shadow:var(--shadow); white-space:nowrap;
+    }
+    .empty-state { text-align:center; padding:40px 20px; color:var(--text-muted); }
+    .qr-canvas { background:#fff; padding:12px; border-radius:var(--radius); }
+  </style>
+</head>
+<body>
+  <!-- Splash -->
+  <div id="splash-screen">
+    <div class="splash-content">
+      <div class="splash-logo">💬</div>
+      <div class="splash-title">AnonMesh Chat</div>
+      <div class="splash-subtitle">Jaringan Seluler · E2E Encryption</div>
+      <div class="splash-loader"></div>
+    </div>
+  </div>
+
+  <!-- Login -->
+  <div id="login-screen" class="screen">
+    <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:20px;">
+      <div class="login-card">
+        <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+        <div style="font-size:22px;font-weight:700;">Masuk AnonMesh</div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">Chat anonim tanpa nomor/email</div>
+        <div class="input-group">
+          <input type="text" id="username-input" placeholder="Nama Pengguna" maxlength="25">
+        </div>
+        <button class="btn btn-primary" id="btn-login">🚀 Masuk</button>
+        <p style="font-size:10px;color:var(--text-muted);margin-top:12px;">ID unik dibuat otomatis</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permission -->
+  <div id="permission-screen" class="screen">
+    <div style="display:flex;align-items:center;justify-content:center;flex:1;padding:20px;">
+      <div class="perm-card">
+        <div style="font-size:40px;">🔒</div>
+        <h3 style="margin:8px 0;">Izin Diperlukan</h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">Untuk pengalaman penuh</p>
+        <div class="perm-item"><span class="status-dot" id="dot-mic"></span>🎤 Mikrofon <span style="margin-left:auto;font-size:12px;" id="status-mic">-</span></div>
+        <div class="perm-item"><span class="status-dot" id="dot-clip"></span>📋 Clipboard <span style="margin-left:auto;font-size:12px;" id="status-clip">-</span></div>
+        <div class="perm-item"><span class="status-dot" id="dot-notif"></span>🔔 Notifikasi <span style="margin-left:auto;font-size:12px;" id="status-notif">-</span></div>
+        <button class="btn btn-primary" id="btn-check-perms" style="margin-top:12px;">🔍 Periksa & Minta</button>
+        <button class="btn btn-outline" id="btn-skip-perms" style="width:100%;margin-top:8px;">⏭ Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main-screen" class="screen">
+    <div id="tab-chat" class="tab-content" style="flex:1;display:flex;flex-direction:column;padding:12px;">
+      <input class="search-input" id="search-chat" placeholder="🔍 Cari chat...">
+      <div id="chat-list-container" style="flex:1;overflow-y:auto;"></div>
+    </div>
+    <div id="tab-friends" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
+      <button class="btn btn-outline" id="btn-add-friend" style="margin-bottom:12px;">➕ Tambah Teman</button>
+      <div id="friends-list-container" style="flex:1;overflow-y:auto;"></div>
+    </div>
+    <div id="tab-scan" class="tab-content" style="flex:1;display:none;align-items:center;justify-content:center;flex-direction:column;">
+      <div style="font-size:64px;">📷</div>
+      <h3>Scan QR</h3>
+      <p style="color:var(--text-secondary);">Fitur scan memerlukan kamera</p>
+      <button class="btn btn-primary" id="btn-simulate-scan" style="margin-top:12px;">🔍 Simulasi Scan</button>
+    </div>
+    <div id="tab-profile" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:20px;align-items:center;">
+      <div class="avatar" style="width:72px;height:72px;font-size:28px;" id="profile-avatar">?</div>
+      <h3 id="profile-name" style="margin-top:10px;">-</h3>
+      <p id="profile-id" style="font-family:monospace;color:var(--text-secondary);">-</p>
+      <canvas id="profile-qr" class="qr-canvas" width="180" height="180" style="margin:12px 0;"></canvas>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm btn-outline" id="btn-copy-id">📋 Salin ID</button>
+        <button class="btn btn-sm btn-outline" id="btn-share-qr">📤 Bagikan</button>
+      </div>
+    </div>
+    <div id="tab-settings" class="tab-content" style="flex:1;display:none;flex-direction:column;padding:12px;">
+      <div class="settings-item" id="menu-profile"><span>👤 Profil Saya</span><span>→</span></div>
+      <div class="settings-item" id="menu-privacy"><span>🔒 Privasi</span><span>→</span></div>
+      <div class="settings-item" id="menu-blocked"><span>🚫 Daftar Blokir</span><span>→</span></div>
+      <div class="settings-item" id="menu-starred"><span>⭐ Pesan Berbintang</span><span>→</span></div>
+      <div class="settings-item" id="menu-theme"><span>🎨 Tema</span><span id="theme-label">Dark</span></div>
+      <div class="settings-item" id="menu-about"><span>ℹ️ Tentang</span><span>→</span></div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="chat">💬 Chat</button>
+      <button class="nav-item" data-tab="friends">👥 Teman</button>
+      <button class="nav-item" data-tab="scan">📷 Scan</button>
+      <button class="nav-item" data-tab="profile">👤 Profil</button>
+      <button class="nav-item" data-tab="settings">⚙️ Setelan</button>
+    </nav>
+  </div>
+
+  <!-- Chat Detail -->
+  <div id="chat-detail-screen" class="screen">
+    <div class="app-header">
+      <button class="back-btn" id="btn-back-chat">←</button>
+      <div class="header-info">
+        <div class="header-title" id="chat-partner-name">-</div>
+        <div class="header-status" id="chat-partner-status">offline</div>
+      </div>
+      <button class="icon-btn" id="btn-chat-menu">⋮</button>
+    </div>
+    <div id="pinned-container"></div>
+    <div class="messages-container" id="messages-container"></div>
+    <div class="chat-input-area">
+      <button class="icon-btn" id="btn-voice">🎤</button>
+      <input type="text" id="message-input" placeholder="Ketik pesan..." maxlength="1000">
+      <button class="icon-btn send-btn" id="btn-send">➤</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal-sheet" id="modal-content"></div>
+  </div>
+  <div class="toast" id="toast" style="display:none;"></div>
+
+  <script>
+    (function() {
+      // ---------- STORAGE ----------
+      const PREFIX = 'anonmesh_';
+      let currentUser = null;       // { username, chatId }
+      let allChats = {};           // { [partnerId]: { partnerName, messages[], pinned[], online:bool } }
+      let friendsList = [];        // [{ name, chatId }]
+      let blockedUsers = [];       // [{ name, chatId }]
+      let starredMessages = [];    // [{ chatId, index, content, partnerName }]
+      let settings = {
+        privacy: { allowAddViaID:true, allowAddViaQR:true, showMyQR:true, acceptVoice:true },
+        theme: 'dark'
+      };
+      let permissions = { mic:false, clipboard:false, notif:false };
+      let currentPartnerId = null;
+      let isRecording = false;
+      let mediaRecorder = null;
+      let audioChunks = [];
+
+      function save() {
+        localStorage.setItem(PREFIX+'data', JSON.stringify({
+          currentUser, allChats, friendsList, blockedUsers, starredMessages, settings, permissions
+        }));
+      }
+      function load() {
+        const raw = localStorage.getItem(PREFIX+'data');
+        if(raw) {
+          try {
+            const d = JSON.parse(raw);
+            currentUser = d.currentUser || null;
+            allChats = d.allChats || {};
+            friendsList = d.friendsList || [];
+            blockedUsers = d.blockedUsers || [];
+            starredMessages = d.starredMessages || [];
+            settings = d.settings || { privacy:{allowAddViaID:true,allowAddViaQR:true,showMyQR:true,acceptVoice:true}, theme:'dark' };
+            permissions = d.permissions || { mic:false, clipboard:false, notif:false };
+          } catch(e){ resetData(); }
+        } else resetData();
+      }
+      function resetData() {
+        currentUser = null; allChats = {}; friendsList = []; blockedUsers = [];
+        starredMessages = []; settings = { privacy:{allowAddViaID:true,allowAddViaQR:true,showMyQR:true,acceptVoice:true}, theme:'dark' };
+        permissions = { mic:false, clipboard:false, notif:false };
+      }
+
+      // ---------- HELPERS ----------
+      const genId = () => 'ACH-'+Math.random().toString(36).substring(2,8).toUpperCase();
+      const formatTime = (iso) => {
+        const d = new Date(iso); const now = new Date();
+        const h = d.getHours().toString().padStart(2,'0'), m = d.getMinutes().toString().padStart(2,'0');
+        if(d.toDateString()===now.toDateString()) return `Hari ini ${h}:${m}`;
+        const y = new Date(now); y.setDate(now.getDate()-1);
+        if(d.toDateString()===y.toDateString()) return `Kemarin ${h}:${m}`;
+        return `${d.getDate()}/${d.getMonth()+1} ${h}:${m}`;
+      };
+      const formatDur = (s) => { const sec=Math.floor(s); return `${Math.floor(sec/60)}:${(sec%60).toString().padStart(2,'0')}`; };
+      const toast = (msg) => {
+        const t = document.getElementById('toast');
+        t.textContent = msg; t.style.display='block'; t.style.animation='none';
+        void t.offsetWidth; t.style.animation='bounceIn 0.4s';
+        clearTimeout(t._t); t._t = setTimeout(()=>{t.style.display='none'},2000);
+      };
+      const showModal = (html) => {
+        document.getElementById('modal-content').innerHTML = html;
+        document.getElementById('modal-overlay').classList.remove('hidden');
+      };
+      const hideModal = () => document.getElementById('modal-overlay').classList.add('hidden');
+      const applyTheme = () => {
+        const t = settings.theme;
+        document.body.classList.toggle('light-mode', t==='light' || (t==='system' && window.matchMedia('(prefers-color-scheme:light)').matches));
+        const lbl = document.getElementById('theme-label');
+        if(lbl) lbl.textContent = t==='dark'?'Dark':t==='light'?'Light':'System';
+      };
+
+      // ---------- PERMISSIONS ----------
+      async function checkMic() {
+        try { const s=await navigator.mediaDevices.getUserMedia({audio:true}); s.getTracks().forEach(t=>t.stop()); permissions.mic=true; return true; }
+        catch{ permissions.mic=false; return false; }
+      }
+      async function checkClipboard() {
+        try { await navigator.clipboard.readText(); permissions.clipboard=true; return true; }
+        catch { permissions.clipboard=false; return false; }
+      }
+      async function checkNotif() {
+        if(!('Notification' in window)) { permissions.notif=false; return false; }
+        if(Notification.permission==='granted') { permissions.notif=true; return true; }
+        if(Notification.permission==='denied') { permissions.notif=false; return false; }
+        const r = await Notification.requestPermission();
+        permissions.notif = r==='granted'; return permissions.notif;
+      }
+      function updatePermUI() {
+        const set = (id,ok) => {
+          const dot=document.getElementById('dot-'+id), st=document.getElementById('status-'+id);
+          if(dot) dot.className='status-dot '+(ok?'dot-ok':'dot-no');
+          if(st) st.textContent=ok?'✅ Siap':'❌ Belum';
+        };
+        set('mic',permissions.mic); set('clip',permissions.clipboard); set('notif',permissions.notif);
+      }
+
+      // ---------- QR ----------
+      function drawQR(canvas, text) {
+        const ctx=canvas.getContext('2d'), s=canvas.width;
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,s,s);
+        const hash = text.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+        const mod=21, ms=Math.floor(s/(mod+8)), off=Math.floor((s-mod*ms)/2);
+        const drawFinder=(x,y)=>{
+          ctx.fillStyle='#000'; ctx.fillRect(x,y,ms*7,ms*7);
+          ctx.fillStyle='#fff'; ctx.fillRect(x+ms,y+ms,ms*5,ms*5);
+          ctx.fillStyle='#000'; ctx.fillRect(x+ms*2,y+ms*2,ms*3,ms*3);
+        };
+        drawFinder(off,off); drawFinder(off+ms*(mod-7),off); drawFinder(off,off+ms*(mod-7));
+        ctx.fillStyle='#000';
+        for(let r=0;r<mod;r++) for(let c=0;c<mod;c++) {
+          if((r<8&&c<8)||(r<8&&c>=mod-8)||(r>=mod-8&&c<8)) continue;
+          if((hash*(r+1)*(c+1)*7+r*13+c*17)%100<45) ctx.fillRect(off+c*ms,off+r*ms,ms,ms);
+        }
+      }
+
+      // ---------- SIMULASI STATUS ONLINE ----------
+      function randomOnlineStatus() { return Math.random() < 0.7; } // 70% online
+      function updateOnlineStatuses() {
+        Object.keys(allChats).forEach(id => {
+          if (!allChats[id].hasOwnProperty('online')) allChats[id].online = randomOnlineStatus();
+        });
+        // Randomly toggle some
+        const ids = Object.keys(allChats);
+        if(ids.length>0) {
+          const randomId = ids[Math.floor(Math.random()*ids.length)];
+          allChats[randomId].online = !allChats[randomId].online;
+        }
+        save();
+        if(document.getElementById('main-screen').classList.contains('active')) {
+          renderChatList();
+          renderFriendsList();
+        }
+        if(currentPartnerId && document.getElementById('chat-detail-screen').classList.contains('active')) {
+          updateChatDetailHeader();
+        }
+      }
+      setInterval(updateOnlineStatuses, 8000); // update setiap 8 detik
+
+      // ---------- RENDER ----------
+      function renderChatList(filter='') {
+        const container = document.getElementById('chat-list-container');
+        if(!container) return;
+        const chats = Object.values(allChats).filter(c => c.messages.length>0 || friendsList.some(f=>f.chatId===c.partnerId));
+        const f = filter.toLowerCase().trim();
+        const filtered = f ? chats.filter(c => c.partnerName.toLowerCase().includes(f)) : chats;
+        if(filtered.length===0) {
+          container.innerHTML = `<div class="empty-state"><div style="font-size:48px;">💬</div><p>${f?'Tidak ditemukan':'Belum ada chat'}</p></div>`;
+          return;
+        }
+        container.innerHTML = filtered.map(c => {
+          const last = c.messages.length>0 ? c.messages[c.messages.length-1] : null;
+          const preview = last ? (last.type==='voice'?'🎤 Voice Note':last.content.substring(0,35)) : 'Belum ada pesan';
+          const time = last ? formatTime(last.timestamp) : '';
+          const online = c.online !== false;
+          return `
+            <div class="chat-list-item" data-id="${c.partnerId}">
+              <div class="avatar">${c.partnerName.charAt(0).toUpperCase()}<span class="online-dot ${online?'':'offline-dot'}"></span></div>
+              <div class="chat-info"><div class="chat-name">${c.partnerName}</div><div class="chat-preview">${preview}</div></div>
+              <div class="chat-time">${time}</div>
+            </div>`;
+        }).join('');
+        document.querySelectorAll('.chat-list-item').forEach(el => {
+          el.addEventListener('click', () => openChat(el.dataset.id));
+        });
+      }
+
+      function renderFriendsList() {
+        const container = document.getElementById('friends-list-container');
+        if(!container) return;
+        if(friendsList.length===0) {
+          container.innerHTML = `<div class="empty-state"><div style="font-size:48px;">🤝</div><p>Belum ada teman</p></div>`;
+          return;
+        }
+        container.innerHTML = friendsList.map(f => {
+          const isBlocked = blockedUsers.some(b=>b.chatId===f.chatId);
+          const online = allChats[f.chatId]?.online !== false;
+          return `
+            <div class="chat-list-item">
+              <div class="avatar" style="width:40px;height:40px;font-size:16px;">${f.name.charAt(0).toUpperCase()}<span class="online-dot ${online?'':'offline-dot'}" style="width:10px;height:10px;"></span></div>
+              <div class="chat-info"><div class="chat-name">${f.name} ${isBlocked?'🚫':''}</div><div style="font-size:10px;font-family:monospace;">${f.chatId}</div></div>
+              <button class="btn btn-sm btn-outline chat-btn" data-id="${f.chatId}">💬</button>
+              <button class="btn btn-sm ${isBlocked?'btn-success':'btn-danger'} block-btn" data-id="${f.chatId}">${isBlocked?'Buka':'Blokir'}</button>
+            </div>`;
+        }).join('');
+        document.querySelectorAll('.chat-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); openChat(b.dataset.id); }));
+        document.querySelectorAll('.block-btn').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); toggleBlock(b.dataset.id); }));
+      }
+
+      function renderMessages() {
+        const container = document.getElementById('messages-container');
+        const pinnedDiv = document.getElementById('pinned-container');
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        if(pinnedDiv) {
+          pinnedDiv.innerHTML = (chat.pinned||[]).map((p,i)=>`<div class="pinned-banner">📌 ${p.content.substring(0,40)} <button class="btn btn-sm btn-ghost" style="margin-left:auto;" data-unpin="${p.index}">Lepas</button></div>`).join('');
+          pinnedDiv.querySelectorAll('[data-unpin]').forEach(b => b.addEventListener('click', ()=> unpinMessage(parseInt(b.dataset.unpin))));
+        }
+        if(chat.messages.length===0) {
+          container.innerHTML = `<div class="empty-state"><div style="font-size:48px;">💬</div><p>Mulai percakapan</p></div>`;
+          return;
+        }
+        container.innerHTML = chat.messages.map((msg,i) => {
+          const isMe = msg.sender==='me';
+          const star = starredMessages.some(s=>s.chatId===currentPartnerId && s.index===i);
+          return `
+            <div class="message-bubble ${isMe?'message-sent':'message-received'}" data-index="${i}">
+              ${star?'<span style="position:absolute;top:-6px;right:8px;">⭐</span>':''}
+              ${msg.type==='voice'?`<div style="display:flex;align-items:center;gap:8px;"><button class="voice-play" data-index="${i}">▶</button> <span>🎤 Voice Note</span> <span style="font-size:10px;">${formatDur(msg.duration||0)}</span></div>`:msg.content}
+              <div class="message-time">${formatTime(msg.timestamp)}</div>
+              ${isMe?'<div class="message-status">✓✓ Diterima</div>':''}
+            </div>`;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
+        // long press
+        container.querySelectorAll('.message-bubble').forEach(b => {
+          let timer;
+          b.addEventListener('pointerdown', (e) => {
+            timer = setTimeout(() => {
+              const idx = parseInt(b.dataset.index);
+              showMessageMenu(idx);
+            }, 600);
+          });
+          b.addEventListener('pointerup', ()=>clearTimeout(timer));
+          b.addEventListener('pointerleave', ()=>clearTimeout(timer));
+        });
+        container.querySelectorAll('.voice-play').forEach(b => b.addEventListener('click', (e)=> { e.stopPropagation(); playVoice(parseInt(b.dataset.index)); }));
+      }
+
+      function updateChatDetailHeader() {
+        const nameEl = document.getElementById('chat-partner-name');
+        const statusEl = document.getElementById('chat-partner-status');
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        if(nameEl) nameEl.textContent = chat.partnerName;
+        if(statusEl) {
+          const online = chat.online !== false;
+          statusEl.textContent = online ? 'online' : 'offline';
+          statusEl.className = 'header-status ' + (online ? '' : 'offline');
+        }
+      }
+
+      function openChat(partnerId) {
+        if(blockedUsers.some(b=>b.chatId===partnerId)) return toast('🚫 Pengguna diblokir');
+        if(!allChats[partnerId]) {
+          const friend = friendsList.find(f=>f.chatId===partnerId);
+          if(!friend) return toast('Teman tidak ditemukan');
+          allChats[partnerId] = { partnerName: friend.name, messages: [], pinned: [], online: randomOnlineStatus() };
+        }
+        currentPartnerId = partnerId;
+        document.getElementById('chat-detail-screen').classList.add('active');
+        document.getElementById('main-screen').classList.remove('active');
+        updateChatDetailHeader();
+        renderMessages();
+      }
+
+      function goBackToMain() {
+        currentPartnerId = null;
+        document.getElementById('chat-detail-screen').classList.remove('active');
+        document.getElementById('main-screen').classList.add('active');
+        switchTab('chat');
+        renderChatList();
+      }
+
+      // ---------- ACTIONS ----------
+      function sendMessage() {
+        const input = document.getElementById('message-input');
+        const text = input.value.trim();
+        if(!text || !currentPartnerId || !allChats[currentPartnerId]) return;
+        allChats[currentPartnerId].messages.push({ type:'text', content:text, sender:'me', timestamp:new Date().toISOString() });
+        input.value = '';
+        save(); renderMessages(); renderChatList();
+        setTimeout(() => simulateReply(), 1500+Math.random()*3000);
+      }
+      function simulateReply() {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const replies = ['Hai!','Oke','👍','Baik','Siap','Mantap','Terima kasih','Haha','Sampai jumpa'];
+        const msg = { type:'text', content:replies[Math.floor(Math.random()*replies.length)], sender:'partner', timestamp:new Date().toISOString() };
+        allChats[currentPartnerId].messages.push(msg);
+        save(); renderMessages(); renderChatList();
+        if(permissions.notif && document.hidden) new Notification('AnonMesh', {body: allChats[currentPartnerId].partnerName+': '+msg.content});
+      }
+      function deleteMessage(index) {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        chat.messages.splice(index,1);
+        chat.pinned = (chat.pinned||[]).filter(p=>p.index!==index).map(p=>({...p, index: p.index>index?p.index-1:p.index}));
+        starredMessages = starredMessages.filter(s=>!(s.chatId===currentPartnerId && s.index===index));
+        save(); renderMessages(); renderChatList(); hideModal(); toast('Pesan dihapus (lokal)');
+      }
+      function starMessage(index) {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const existing = starredMessages.findIndex(s=>s.chatId===currentPartnerId && s.index===index);
+        if(existing>=0) { starredMessages.splice(existing,1); toast('Dihapus dari bintang'); }
+        else {
+          const msg = allChats[currentPartnerId].messages[index];
+          starredMessages.push({ chatId:currentPartnerId, index, content:msg.content||'(Voice Note)', partnerName:allChats[currentPartnerId].partnerName });
+          toast('⭐ Ditambahkan ke bintang');
+        }
+        save(); renderMessages(); hideModal();
+      }
+      function pinMessage(index) {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        if(!chat.pinned) chat.pinned = [];
+        const existing = chat.pinned.findIndex(p=>p.index===index);
+        if(existing>=0) { chat.pinned.splice(existing,1); toast('Sematan dilepas'); }
+        else {
+          if(chat.pinned.length>=3) { toast('Maksimal 3 sematan'); hideModal(); return; }
+          chat.pinned.push({ index, content: chat.messages[index].content||'(Voice Note)' });
+          toast('📌 Disematkan');
+        }
+        save(); renderMessages(); hideModal();
+      }
+      function unpinMessage(index) {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const chat = allChats[currentPartnerId];
+        if(chat.pinned) chat.pinned = chat.pinned.filter(p=>p.index!==index);
+        save(); renderMessages();
+      }
+      function toggleBlock(chatId) {
+        const friend = friendsList.find(f=>f.chatId===chatId);
+        if(!friend) return;
+        const idx = blockedUsers.findIndex(b=>b.chatId===chatId);
+        if(idx>=0) { blockedUsers.splice(idx,1); toast('✅ Dibuka blokir'); }
+        else { blockedUsers.push({name:friend.name, chatId}); toast('🚫 Diblokir'); }
+        save(); renderFriendsList(); renderChatList();
+      }
+      function deleteAllMessages() {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        allChats[currentPartnerId].messages = [];
+        allChats[currentPartnerId].pinned = [];
+        starredMessages = starredMessages.filter(s=>s.chatId!==currentPartnerId);
+        save(); renderMessages(); renderChatList(); hideModal(); toast('Semua pesan dihapus');
+      }
+      function addFriend(method, value) {
+        if(method==='id') {
+          const id = value.trim();
+          if(!id.startsWith('ACH-') || id.length<9) return toast('ID tidak valid');
+          if(friendsList.some(f=>f.chatId===id)) return toast('Sudah teman');
+          if(id===currentUser.chatId) return toast('Tidak bisa menambah sendiri');
+          const name = 'User-'+id.split('-')[1].substring(0,4);
+          friendsList.push({name, chatId:id});
+          if(!allChats[id]) allChats[id] = { partnerName:name, messages:[], pinned:[], online:randomOnlineStatus() };
+        } else {
+          const simId = 'ACH-'+Math.random().toString(36).substring(2,7).toUpperCase();
+          const name = 'QR-User-'+simId.split('-')[1];
+          if(friendsList.some(f=>f.chatId===simId)) return toast('Sudah teman');
+          friendsList.push({name, chatId:simId});
+          if(!allChats[simId]) allChats[simId] = { partnerName:name, messages:[], pinned:[], online:randomOnlineStatus() };
+        }
+        save(); renderFriendsList(); renderChatList(); hideModal(); toast('✅ Teman ditambahkan');
+      }
+      async function startRecording() {
+        if(!permissions.mic) { const ok=await checkMic(); if(!ok) return toast('Izin mikrofon diperlukan'); save(); }
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+          audioChunks = []; mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+          mediaRecorder.onstop = () => {
+            stream.getTracks().forEach(t=>t.stop());
+            if(audioChunks.length>0 && currentPartnerId && allChats[currentPartnerId]) {
+              const blob = new Blob(audioChunks,{type:'audio/webm'});
+              const duration = (Date.now() - recStart)/1000;
+              allChats[currentPartnerId].messages.push({ type:'voice', content:'Voice Note', audioBlob:blob, duration, sender:'me', timestamp:new Date().toISOString() });
+              save(); renderMessages(); renderChatList();
+            }
+            mediaRecorder=null; audioChunks=[];
+          };
+          mediaRecorder.start(); recStart=Date.now(); isRecording=true;
+          document.getElementById('btn-voice').classList.add('recording'); toast('🎤 Merekam...');
+        } catch(e) { toast('Gagal merekam'); }
+      }
+      function stopRecording() {
+        if(mediaRecorder && isRecording) { mediaRecorder.stop(); isRecording=false; document.getElementById('btn-voice').classList.remove('recording'); }
+      }
+      function playVoice(index) {
+        if(!currentPartnerId || !allChats[currentPartnerId]) return;
+        const msg = allChats[currentPartnerId].messages[index];
+        if(msg?.audioBlob) { const a=new Audio(URL.createObjectURL(msg.audioBlob)); a.play(); }
+        else toast('Audio tidak tersedia');
+      }
+      function showMessageMenu(index) {
+        const chat = allChats[currentPartnerId];
+        if(!chat) return;
+        const isStar = starredMessages.some(s=>s.chatId===currentPartnerId&&s.index===index);
+        const isPinned = (chat.pinned||[]).some(p=>p.index===index);
+        showModal(`
+          <h3>Opsi Pesan</h3>
+          <div class="modal-option" onclick="window._deleteMsg(${index})">🗑 Hapus (lokal)</div>
+          <div class="modal-option" onclick="window._starMsg(${index})">${isStar?'🌟 Hapus Bintang':'⭐ Bintang'}</div>
+          <div class="modal-option" onclick="window._pinMsg(${index})">${isPinned?'📌 Lepas Sematan':'📌 Sematkan'}</div>
+          <div class="modal-option" onclick="hideModal()">Batal</div>
+        `);
+      }
+      // Global exports for modal callbacks
+      window._deleteMsg = deleteMessage;
+      window._starMsg = starMessage;
+      window._pinMsg = pinMessage;
+      window.hideModal = hideModal;
+
+      // ---------- SCREEN SWITCHING ----------
+      function switchScreen(screen) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        if(screen==='login') document.getElementById('login-screen').classList.add('active');
+        else if(screen==='permission') document.getElementById('permission-screen').classList.add('active');
+        else if(screen==='main') document.getElementById('main-screen').classList.add('active');
+        else if(screen==='chat') document.getElementById('chat-detail-screen').classList.add('active');
+      }
+      function switchTab(tab) {
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display='none');
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const tabEl = document.getElementById('tab-'+tab);
+        if(tabEl) tabEl.style.display='flex';
+        const nav = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+        if(nav) nav.classList.add('active');
+        if(tab==='profile') updateProfileTab();
+        if(tab==='chat') renderChatList();
+        if(tab==='friends') renderFriendsList();
+        if(tab==='settings') applyTheme();
+      }
+      function updateProfileTab() {
+        if(!currentUser) return;
+        document.getElementById('profile-name').textContent = currentUser.username;
+        document.getElementById('profile-id').textContent = currentUser.chatId;
+        document.getElementById('profile-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
+        const canvas = document.getElementById('profile-qr');
+        if(canvas && settings.privacy.showMyQR) drawQR(canvas, 'ACH:'+currentUser.chatId);
+      }
+
+      // ---------- EVENT BINDINGS ----------
+      document.getElementById('btn-login').addEventListener('click', () => {
+        const name = document.getElementById('username-input').value.trim();
+        if(!name) return toast('Masukkan nama');
+        currentUser = { username: name, chatId: genId() };
+        save();
+        document.getElementById('username-input').value = '';
+        switchScreen('permission');
+        updatePermUI();
+      });
+      document.getElementById('btn-check-perms').addEventListener('click', async () => {
+        await Promise.all([checkMic(), checkClipboard(), checkNotif()]);
+        updatePermUI(); save();
+        if(permissions.mic || permissions.clipboard) {
+          toast('Izin cukup, melanjutkan');
+          setTimeout(() => { switchScreen('main'); switchTab('chat'); }, 500);
+        } else toast('Beberapa izin belum diberikan');
+      });
+      document.getElementById('btn-skip-perms').addEventListener('click', () => {
+        switchScreen('main'); switchTab('chat');
+      });
+      document.getElementById('btn-back-chat').addEventListener('click', goBackToMain);
+      document.getElementById('btn-send').addEventListener('click', sendMessage);
+      document.getElementById('message-input').addEventListener('keydown', e => { if(e.key==='Enter') sendMessage(); });
+      const voiceBtn = document.getElementById('btn-voice');
+      voiceBtn.addEventListener('pointerdown', e => { e.preventDefault(); if(!currentPartnerId) return; startRecording(); });
+      voiceBtn.addEventListener('pointerup', e => { e.preventDefault(); if(isRecording) stopRecording(); });
+      voiceBtn.addEventListener('pointerleave', () => { if(isRecording) stopRecording(); });
+      document.getElementById('btn-chat-menu').addEventListener('click', () => {
+        if(!currentPartnerId) return;
+        const isBlocked = blockedUsers.some(b=>b.chatId===currentPartnerId);
+        showModal(`
+          <h3>Menu Chat</h3>
+          <div class="modal-option" onclick="window._deleteAll()">🗑 Hapus Semua Pesan</div>
+          <div class="modal-option" onclick="window._toggleBlockCurrent()">${isBlocked?'✅ Buka Blokir':'🚫 Blokir'}</div>
+          <div class="modal-option" onclick="hideModal()">Batal</div>
+        `);
+      });
+      window._deleteAll = () => { deleteAllMessages(); };
+      window._toggleBlockCurrent = () => {
+        if(currentPartnerId) { toggleBlock(currentPartnerId); hideModal(); goBackToMain(); }
+      };
+      document.querySelectorAll('.nav-item').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+      document.getElementById('search-chat').addEventListener('input', e => renderChatList(e.target.value));
+      document.getElementById('btn-add-friend').addEventListener('click', () => {
+        showModal(`
+          <h3>Tambah Teman</h3>
+          <div class="modal-option" id="add-via-id">🆔 Via ID Chat</div>
+          <div class="modal-option" id="add-via-qr">📷 Via QR Code</div>
+          <div class="modal-option" onclick="hideModal()">Batal</div>
+        `);
+        setTimeout(() => {
+          document.getElementById('add-via-id')?.addEventListener('click', ()=>{ hideModal(); const id=prompt('Masukkan ID Chat:'); if(id) addFriend('id',id); });
+          document.getElementById('add-via-qr')?.addEventListener('click', ()=>{ hideModal(); if(confirm('Simulasikan scan QR?')) addFriend('qr'); });
+        }, 100);
+      });
+      document.getElementById('btn-simulate-scan').addEventListener('click', () => { if(confirm('Simulasi scan?')) { addFriend('qr'); switchTab('friends'); } });
+      document.getElementById('btn-copy-id').addEventListener('click', () => {
+        if(currentUser) navigator.clipboard.writeText(currentUser.chatId).then(()=>toast('📋 ID disalin')).catch(()=>toast('Gagal'));
+      });
+      document.getElementById('btn-share-qr').addEventListener('click', () => {
+        if(currentUser && navigator.share) navigator.share({title:'ID AnonMesh', text:currentUser.chatId}).catch(()=>{});
+        else toast('Bagikan: '+currentUser.chatId);
+      });
+      document.getElementById('menu-profile').addEventListener('click', ()=>switchTab('profile'));
+      document.getElementById('menu-privacy').addEventListener('click', ()=>{
+        const p = settings.privacy;
+        showModal(`
+          <h3>Privasi</h3>
+          <div class="settings-item" id="priv-allowId"><span>Izinkan Tambah via ID</span><div class="toggle-switch ${p.allowAddViaID?'on':''}"></div></div>
+          <div class="settings-item" id="priv-allowQr"><span>Izinkan via QR</span><div class="toggle-switch ${p.allowAddViaQR?'on':''}"></div></div>
+          <div class="settings-item" id="priv-showQr"><span>Tampilkan QR Saya</span><div class="toggle-switch ${p.showMyQR?'on':''}"></div></div>
+          <div class="settings-item" id="priv-voice"><span>Terima Voice Note</span><div class="toggle-switch ${p.acceptVoice?'on':''}"></div></div>
+          <button class="btn btn-outline" style="width:100%;margin-top:12px;" onclick="hideModal()">Tutup</button>
+        `);
+        ['allowAddViaID','allowAddViaQR','showMyQR','acceptVoice'].forEach(key => {
+          setTimeout(() => {
+            const el = document.getElementById('priv-'+key.replace('allow','').replace('Via','').replace('Add','').toLowerCase().replace('viaqr','allowQr').replace('showmyqr','showQr').replace('acceptvoice','voice'));
+            if(el) el.addEventListener('click', () => {
+              settings.privacy[key] = !settings.privacy[key];
+              save(); document.getElementById('menu-privacy').click(); updateProfileTab();
+            });
+          }, 100);
+        });
+      });
+      document.getElementById('menu-blocked').addEventListener('click', ()=>{
+        let html = '<h3>Daftar Blokir</h3>';
+        if(blockedUsers.length===0) html+='<p style="text-align:center;padding:20px;">Kosong</p>';
+        else html += blockedUsers.map(b=>`<div class="settings-item"><span>${b.name}</span><span style="font-family:monospace;">${b.chatId}</span><button class="btn btn-sm btn-success unblock-btn" data-id="${b.chatId}">Buka</button></div>`).join('');
+        html+='<button class="btn btn-outline" style="width:100%;margin-top:12px;" onclick="hideModal()">Tutup</button>';
+        showModal(html);
+        setTimeout(() => document.querySelectorAll('.unblock-btn').forEach(b => b.addEventListener('click', (e)=>{
+          const id = b.dataset.id;
+          blockedUsers = blockedUsers.filter(x=>x.chatId!==id);
+          save(); document.getElementById('menu-blocked').click(); renderFriendsList(); renderChatList(); toast('Dibuka blokir');
+        })), 100);
+      });
+      document.getElementById('menu-starred').addEventListener('click', ()=>{
+        let html = '<h3>Pesan Berbintang</h3>';
+        if(starredMessages.length===0) html+='<p style="text-align:center;padding:20px;">Belum ada</p>';
+        else html += starredMessages.map((s,i)=>`<div class="settings-item"><span>⭐ ${s.partnerName}</span><span style="font-size:12px;">${s.content.substring(0,25)}</span><button class="btn btn-sm btn-outline remove-star" data-index="${i}">Hapus</button></div>`).join('');
+        html+='<button class="btn btn-outline" style="width:100%;" onclick="hideModal()">Tutup</button>';
+        showModal(html);
+        setTimeout(()=>document.querySelectorAll('.remove-star').forEach(b=>b.addEventListener('click',()=>{
+          const i = parseInt(b.dataset.index);
+          starredMessages.splice(i,1); save(); document.getElementById('menu-starred').click(); toast('Dihapus dari bintang');
+        })),100);
+      });
+      document.getElementById('menu-theme').addEventListener('click', ()=>{
+        const themes = ['dark','light','system'];
+        const cur = themes.indexOf(settings.theme);
+        settings.theme = themes[(cur+1)%3];
+        save(); applyTheme(); toast('Tema: '+(settings.theme==='dark'?'Dark':settings.theme==='light'?'Light':'System'));
+      });
+      document.getElementById('menu-about').addEventListener('click', ()=>{
+        showModal(`<h3>Tentang</h3><div style="text-align:center;padding:16px;"><div style="font-size:48px;">💬</div><h4>AnonMesh Chat</h4><p>v1.0 · Jaringan Seluler</p><p style="font-size:12px;color:var(--text-secondary);">E2E Encryption · Anonim</p></div><button class="btn btn-outline" style="width:100%;" onclick="hideModal()">Tutup</button>`);
+      });
+      document.getElementById('modal-overlay').addEventListener('click', (e) => { if(e.target===document.getElementById('modal-overlay')) hideModal(); });
+
+      // ---------- INIT ----------
+      function init() {
+        load(); applyTheme();
+        document.getElementById('splash-screen').classList.remove('hidden');
+        setTimeout(() => {
+          document.getElementById('splash-screen').classList.add('hidden');
+          if(currentUser) {
+            switchScreen('main');
+            switchTab('chat');
+            renderChatList();
+            renderFriendsList();
+            updateProfileTab();
+          } else {
+            switchScreen('login');
+          }
+        }, 1600);
+        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', applyTheme);
+        // back button browser
+        window.addEventListener('popstate', (e) => {
+          if(document.getElementById('chat-detail-screen').classList.contains('active')) {
+            goBackToMain();
+            e.preventDefault();
+          }
+        });
+      }
+      init();
+    })();
+  </script>
+</body>
+</html>
